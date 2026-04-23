@@ -32,6 +32,17 @@ export function ProtectedRoute({ children }) {
         return;
       }
 
+      if (session.user.app_metadata?.platform_role === 'super_admin') {
+        if (!ignore) {
+          setStatus({
+            isLoading: false,
+            hasSession: true,
+            hasAccess: true,
+          });
+        }
+        return;
+      }
+
       const { data, error } = await supabase
         .from('lote_usuarios')
         .select('role')

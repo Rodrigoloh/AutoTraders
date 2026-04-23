@@ -29,6 +29,7 @@ Ejecuta en Supabase, en este orden:
 
 1. [supabase/final_multi_tenant_lotes.sql](supabase/final_multi_tenant_lotes.sql)
 2. [supabase/seed_demo_lote.sql](supabase/seed_demo_lote.sql)
+3. [supabase/promote_superadmin.sql](supabase/promote_superadmin.sql) ajustando tu correo para habilitar `/platform`
 
 ## Desarrollo local
 
@@ -52,4 +53,5 @@ Configuración recomendada en Vercel:
 
 - Catálogo: `/demo-lote-norte`
 - Admin: `/demo-lote-norte/admin/login`
+- Plataforma: `/platform/login`
 - Usuario demo esperado en Supabase Auth: `demo-admin@carsaler.mx`

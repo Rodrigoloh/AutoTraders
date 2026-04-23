@@ -1,8 +1,8 @@
 -- Final Supabase schema for a multi-tenant car lot platform.
 -- Includes:
--- 1) lotes, inventario, metricas
+-- 1) platform users, lotes, inventario, metricas
 -- 2) SEO trigger for inventario.meta_tags
--- 3) RLS so lote_admin only manages its own lote_id
+-- 3) RLS for platform + isolated tenant access by lote_id
 -- 4) Storage policies for autos/{lote_id}/{archivo}
 -- 5) Public catalog read + safe metric RPC for WhatsApp click tracking
 
@@ -32,11 +32,20 @@ create table if not exists public.lotes (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text unique,
+  full_name text,
+  avatar_url text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
 create table if not exists public.lote_usuarios (
   id uuid primary key default gen_random_uuid(),
   lote_id uuid not null references public.lotes(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null check (role in ('super_admin', 'lote_admin')),
+  role text not null check (role in ('lote_admin', 'lote_editor', 'lote_viewer')),
   created_at timestamptz not null default timezone('utc', now()),
   unique (lote_id, user_id)
 );
@@ -81,6 +90,7 @@ create table if not exists public.metricas (
 
 create index if not exists idx_lote_usuarios_user_id on public.lote_usuarios(user_id);
 create index if not exists idx_lote_usuarios_lote_id on public.lote_usuarios(lote_id);
+create index if not exists idx_profiles_email on public.profiles(email);
 create index if not exists idx_inventario_lote_id on public.inventario(lote_id);
 create index if not exists idx_inventario_estatus on public.inventario(lote_id, estatus);
 create index if not exists idx_metricas_lote_fecha on public.metricas(lote_id, fecha desc);
@@ -94,6 +104,31 @@ security definer
 set search_path = public
 as $$
   select coalesce(auth.jwt() -> 'app_metadata' ->> 'platform_role', '') = 'super_admin';
+$$;
+
+create or replace function public.handle_auth_user_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, avatar_url)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    new.raw_user_meta_data ->> 'avatar_url'
+  )
+  on conflict (id) do update
+  set
+    email = excluded.email,
+    full_name = coalesce(excluded.full_name, public.profiles.full_name),
+    avatar_url = coalesce(excluded.avatar_url, public.profiles.avatar_url),
+    updated_at = timezone('utc', now());
+
+  return new;
+end;
 $$;
 
 create or replace function public.user_has_lote_role(target_lote_id uuid, allowed_roles text[])
@@ -231,6 +266,12 @@ $$;
 grant execute on function public.record_inventory_metric(uuid, uuid, text, text) to anon;
 grant execute on function public.record_inventory_metric(uuid, uuid, text, text) to authenticated;
 
+drop trigger if exists trg_profiles_updated_at on public.profiles;
+create trigger trg_profiles_updated_at
+before update on public.profiles
+for each row
+execute function public.set_updated_at();
+
 drop trigger if exists trg_lotes_updated_at on public.lotes;
 create trigger trg_lotes_updated_at
 before update on public.lotes
@@ -249,6 +290,26 @@ before update on public.metricas
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists on_auth_user_sync on auth.users;
+create trigger on_auth_user_sync
+after insert or update on auth.users
+for each row
+execute function public.handle_auth_user_sync();
+
+insert into public.profiles (id, email, full_name, avatar_url)
+select
+  u.id,
+  u.email,
+  coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name'),
+  u.raw_user_meta_data ->> 'avatar_url'
+from auth.users u
+on conflict (id) do update
+set
+  email = excluded.email,
+  full_name = coalesce(excluded.full_name, public.profiles.full_name),
+  avatar_url = coalesce(excluded.avatar_url, public.profiles.avatar_url),
+  updated_at = timezone('utc', now());
+
 drop trigger if exists trg_inventario_meta_tags on public.inventario;
 create trigger trg_inventario_meta_tags
 before insert or update of marca, modelo, anio, precio, moneda, ciudad, estado, lote_id
@@ -256,22 +317,55 @@ on public.inventario
 for each row
 execute function public.build_inventario_meta_tags();
 
+alter table public.profiles enable row level security;
 alter table public.lotes enable row level security;
 alter table public.lote_usuarios enable row level security;
 alter table public.inventario enable row level security;
 alter table public.metricas enable row level security;
 
+alter table public.profiles force row level security;
 alter table public.lotes force row level security;
 alter table public.lote_usuarios force row level security;
 alter table public.inventario force row level security;
 alter table public.metricas force row level security;
+
+drop policy if exists "profiles_select_platform_or_self" on public.profiles;
+create policy "profiles_select_platform_or_self"
+on public.profiles
+for select
+to authenticated
+using (
+  id = auth.uid()
+  or public.is_platform_admin()
+);
+
+drop policy if exists "profiles_update_platform_or_self" on public.profiles;
+create policy "profiles_update_platform_or_self"
+on public.profiles
+for update
+to authenticated
+using (
+  id = auth.uid()
+  or public.is_platform_admin()
+)
+with check (
+  id = auth.uid()
+  or public.is_platform_admin()
+);
 
 drop policy if exists "lotes_admin_select_own" on public.lotes;
 create policy "lotes_admin_select_own"
 on public.lotes
 for select
 to authenticated
-using (public.user_has_lote_role(id, array['lote_admin']));
+using (public.user_has_lote_role(id, array['lote_admin', 'lote_editor', 'lote_viewer']));
+
+drop policy if exists "lotes_platform_insert" on public.lotes;
+create policy "lotes_platform_insert"
+on public.lotes
+for insert
+to authenticated
+with check (public.is_platform_admin());
 
 drop policy if exists "lotes_admin_update_own" on public.lotes;
 create policy "lotes_admin_update_own"
@@ -281,6 +375,13 @@ to authenticated
 using (public.user_has_lote_role(id, array['lote_admin']))
 with check (public.user_has_lote_role(id, array['lote_admin']));
 
+drop policy if exists "lotes_platform_delete" on public.lotes;
+create policy "lotes_platform_delete"
+on public.lotes
+for delete
+to authenticated
+using (public.is_platform_admin());
+
 drop policy if exists "lote_usuarios_select_own" on public.lote_usuarios;
 create policy "lote_usuarios_select_own"
 on public.lote_usuarios
@@ -289,6 +390,47 @@ to authenticated
 using (
   user_id = auth.uid()
   or public.user_has_lote_role(lote_id, array['lote_admin'])
+  or public.is_platform_admin()
+);
+
+drop policy if exists "lote_usuarios_insert_admin" on public.lote_usuarios;
+create policy "lote_usuarios_insert_admin"
+on public.lote_usuarios
+for insert
+to authenticated
+with check (
+  (
+    public.user_has_lote_role(lote_id, array['lote_admin'])
+    and role <> 'lote_admin'
+  )
+  or public.is_platform_admin()
+);
+
+drop policy if exists "lote_usuarios_update_admin" on public.lote_usuarios;
+create policy "lote_usuarios_update_admin"
+on public.lote_usuarios
+for update
+to authenticated
+using (
+  public.user_has_lote_role(lote_id, array['lote_admin'])
+  or public.is_platform_admin()
+)
+with check (
+  (
+    public.user_has_lote_role(lote_id, array['lote_admin'])
+    and role <> 'lote_admin'
+  )
+  or public.is_platform_admin()
+);
+
+drop policy if exists "lote_usuarios_delete_admin" on public.lote_usuarios;
+create policy "lote_usuarios_delete_admin"
+on public.lote_usuarios
+for delete
+to authenticated
+using (
+  public.user_has_lote_role(lote_id, array['lote_admin'])
+  or public.is_platform_admin()
 );
 
 drop policy if exists "inventario_admin_select_own" on public.inventario;
@@ -296,22 +438,22 @@ create policy "inventario_admin_select_own"
 on public.inventario
 for select
 to authenticated
-using (public.user_has_lote_role(lote_id, array['lote_admin']));
+using (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor', 'lote_viewer']));
 
 drop policy if exists "inventario_admin_insert_own" on public.inventario;
 create policy "inventario_admin_insert_own"
 on public.inventario
 for insert
 to authenticated
-with check (public.user_has_lote_role(lote_id, array['lote_admin']));
+with check (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor']));
 
 drop policy if exists "inventario_admin_update_own" on public.inventario;
 create policy "inventario_admin_update_own"
 on public.inventario
 for update
 to authenticated
-using (public.user_has_lote_role(lote_id, array['lote_admin']))
-with check (public.user_has_lote_role(lote_id, array['lote_admin']));
+using (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor']))
+with check (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor']));
 
 drop policy if exists "inventario_admin_delete_own" on public.inventario;
 create policy "inventario_admin_delete_own"
@@ -325,15 +467,15 @@ create policy "metricas_admin_select_own"
 on public.metricas
 for select
 to authenticated
-using (public.user_has_lote_role(lote_id, array['lote_admin']));
+using (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor', 'lote_viewer']));
 
 drop policy if exists "metricas_admin_write_own" on public.metricas;
 create policy "metricas_admin_write_own"
 on public.metricas
 for all
 to authenticated
-using (public.user_has_lote_role(lote_id, array['lote_admin']))
-with check (public.user_has_lote_role(lote_id, array['lote_admin']));
+using (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor']))
+with check (public.user_has_lote_role(lote_id, array['lote_admin', 'lote_editor']));
 
 -- Public catalog policies for the storefront.
 drop policy if exists "lotes_public_read_active" on public.lotes;

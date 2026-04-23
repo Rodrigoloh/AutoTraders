@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './styles/themeContext.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PlatformProtectedRoute } from './components/PlatformProtectedRoute';
 
 const PublicCatalogPage = lazy(() =>
   import('./pages/PublicCatalogPage').then((module) => ({
@@ -18,6 +19,16 @@ const AdminLoginPage = lazy(() =>
     default: module.AdminLoginPage,
   })),
 );
+const PlatformLoginPage = lazy(() =>
+  import('./pages/PlatformLoginPage').then((module) => ({
+    default: module.PlatformLoginPage,
+  })),
+);
+const PlatformDashboardPage = lazy(() =>
+  import('./pages/PlatformDashboardPage').then((module) => ({
+    default: module.PlatformDashboardPage,
+  })),
+);
 
 function TenantLayout() {
   return (
@@ -31,6 +42,15 @@ export default function App() {
   return (
     <Suspense fallback={<div className="app-shell"><div className="container loading-state">Cargando interfaz...</div></div>}>
       <Routes>
+        <Route path="/platform/login" element={<PlatformLoginPage />} />
+        <Route
+          path="/platform"
+          element={
+            <PlatformProtectedRoute>
+              <PlatformDashboardPage />
+            </PlatformProtectedRoute>
+          }
+        />
         <Route path="/:slug" element={<TenantLayout />}>
           <Route index element={<PublicCatalogPage />} />
           <Route path="admin/login" element={<AdminLoginPage />} />
@@ -43,7 +63,7 @@ export default function App() {
             }
           />
         </Route>
-        <Route path="*" element={<Navigate to="/demo" replace />} />
+        <Route path="*" element={<Navigate to="/demo-lote-norte" replace />} />
       </Routes>
     </Suspense>
   );
