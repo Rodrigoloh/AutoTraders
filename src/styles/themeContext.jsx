@@ -69,7 +69,9 @@ export function ThemeProvider({ children }) {
 
     const { data, error } = await supabase
       .from('lotes')
-      .select('id, nombre, slug, whatsapp, telefono, facebook_page_id, config_estetica')
+      .select(
+        'id, nombre, slug, whatsapp, telefono, email_contacto, facebook_page_id, config_estetica, config_contenido',
+      )
       .eq('slug', slug)
       .maybeSingle();
 

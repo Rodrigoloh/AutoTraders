@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Building2, LogOut, PlusCircle, Shield, UserPlus, Users } from 'lucide-react';
+import { Building2, LogOut, PlusCircle, Shield, UserPlus, Users, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { KpiSummary } from '../components/KpiSummary';
+import { inviteLoteUser, updateLoteMember } from '../lib/loteUsers';
 
 const initialLoteForm = {
   nombre: '',
   slug: '',
   whatsapp: '',
   telefono: '',
+  emailContacto: '',
+  adminEmail: '',
+  adminFullName: '',
 };
 
 const initialMemberForm = {
   loteId: '',
   email: '',
-  role: 'lote_admin',
+  role: 'lote_editor',
+  fullName: '',
 };
 
 function slugify(value) {
@@ -49,7 +54,7 @@ export function PlatformDashboardPage() {
     ] = await Promise.all([
       supabase
         .from('lotes')
-        .select('id, nombre, slug, telefono, whatsapp, activo, created_at')
+        .select('id, nombre, slug, telefono, whatsapp, email_contacto, activo, created_at')
         .order('created_at', { ascending: false }),
       supabase
         .from('lote_usuarios')
@@ -146,21 +151,53 @@ export function PlatformDashboardPage() {
       slug: slugify(loteForm.slug || loteForm.nombre),
       whatsapp: loteForm.whatsapp || null,
       telefono: loteForm.telefono || null,
+      email_contacto: loteForm.emailContacto || null,
       activo: true,
       config_estetica: {
         nombre_marca: loteForm.nombre,
       },
+      config_contenido: {
+        hero_title: `Explora ${loteForm.nombre}`,
+        hero_subtitle: 'Seminuevos con atención rápida y contacto directo por WhatsApp.',
+        intro_title: 'Catálogo listo para convertir',
+        intro_body: 'Cada lote puede editar estos textos para presentar mejor su inventario.',
+        about_title: 'Compra con claridad',
+        about_body: 'Información simple, visual y orientada a cerrar conversaciones reales.',
+        contact_title: 'Agenda una visita',
+        contact_body: 'Escríbenos y recibe respuesta del equipo del lote.',
+        cta_primary_label: 'Ver inventario',
+        cta_secondary_label: 'Contactar por WhatsApp',
+        powered_by_label: 'Powered by cobalto.blue',
+      },
     };
 
-    const { error } = await supabase.from('lotes').insert(payload);
+    const { data, error } = await supabase.from('lotes').insert(payload).select('id, slug').single();
 
     if (error) {
       setFeedback(error.message);
       return;
     }
 
+    if (loteForm.adminEmail) {
+      try {
+        await inviteLoteUser({
+          loteId: data.id,
+          email: loteForm.adminEmail,
+          role: 'lote_admin',
+          fullName: loteForm.adminFullName,
+          redirectTo: `${window.location.origin}/${data.slug}/admin/login`,
+        });
+      } catch (inviteError) {
+        setFeedback(
+          `Lote creado, pero la invitación no se pudo enviar: ${inviteError.message ?? inviteError}`,
+        );
+        await loadPlatform();
+        return;
+      }
+    }
+
     setLoteForm(initialLoteForm);
-    setFeedback('Lote creado.');
+    setFeedback('Lote creado y flujo de invitación preparado.');
     await loadPlatform();
   };
 
@@ -168,32 +205,54 @@ export function PlatformDashboardPage() {
     event.preventDefault();
     setFeedback('');
 
-    const profile = profiles.find(
-      (candidate) => candidate.email?.toLowerCase() === memberForm.email.toLowerCase(),
-    );
-
-    if (!profile) {
-      setFeedback('Ese correo no existe en profiles. Debe registrarse primero en Auth.');
-      return;
-    }
-
-    const { error } = await supabase.from('lote_usuarios').upsert(
-      {
-        lote_id: memberForm.loteId,
-        user_id: profile.id,
+    try {
+      const lote = lotes.find((entry) => entry.id === memberForm.loteId);
+      await inviteLoteUser({
+        loteId: memberForm.loteId,
+        email: memberForm.email,
         role: memberForm.role,
-      },
-      { onConflict: 'lote_id,user_id' },
-    );
-
-    if (error) {
-      setFeedback(error.message);
+        fullName: memberForm.fullName,
+        redirectTo: `${window.location.origin}/${lote?.slug ?? ''}/admin/login`,
+      });
+    } catch (error) {
+      setFeedback(error.message ?? 'No se pudo procesar la invitación.');
       return;
     }
 
     setMemberForm(initialMemberForm);
-    setFeedback('Usuario asignado al lote.');
+    setFeedback('Invitación procesada correctamente.');
     await loadPlatform();
+  };
+
+  const handleRoleChange = async (loteId, userId, role) => {
+    setFeedback('');
+    try {
+      await updateLoteMember({
+        loteId,
+        userId,
+        action: 'change_role',
+        role,
+      });
+      setFeedback('Rol actualizado.');
+      await loadPlatform();
+    } catch (error) {
+      setFeedback(error.message ?? 'No se pudo actualizar el rol.');
+    }
+  };
+
+  const handleRemoveAccess = async (loteId, userId) => {
+    setFeedback('');
+    try {
+      await updateLoteMember({
+        loteId,
+        userId,
+        action: 'remove_access',
+      });
+      setFeedback('Acceso removido.');
+      await loadPlatform();
+    } catch (error) {
+      setFeedback(error.message ?? 'No se pudo remover el acceso.');
+    }
   };
 
   const handleLogout = async () => {
@@ -319,9 +378,38 @@ export function PlatformDashboardPage() {
                   value={loteForm.telefono}
                 />
               </div>
+              <div className="field">
+                <label htmlFor="lote-email-contacto">Email de contacto</label>
+                <input
+                  id="lote-email-contacto"
+                  name="emailContacto"
+                  onChange={handleLoteChange}
+                  type="email"
+                  value={loteForm.emailContacto}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="lote-admin-email">Email del gerente</label>
+                <input
+                  id="lote-admin-email"
+                  name="adminEmail"
+                  onChange={handleLoteChange}
+                  type="email"
+                  value={loteForm.adminEmail}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="lote-admin-full-name">Nombre del gerente</label>
+                <input
+                  id="lote-admin-full-name"
+                  name="adminFullName"
+                  onChange={handleLoteChange}
+                  value={loteForm.adminFullName}
+                />
+              </div>
               <button className="btn" type="submit">
                 <PlusCircle size={18} />
-                Crear cliente
+                Crear cliente e invitar admin
               </button>
             </form>
 
@@ -329,7 +417,7 @@ export function PlatformDashboardPage() {
               <div className="inline-row">
                 <div>
                   <h2 className="heading-md">Asignar usuario</h2>
-                  <p className="muted">Vincula cuentas existentes a un tenant.</p>
+                  <p className="muted">Invita o reasigna usuarios dentro de cada lote.</p>
                 </div>
                 <UserPlus size={20} />
               </div>
@@ -362,6 +450,15 @@ export function PlatformDashboardPage() {
                 />
               </div>
               <div className="field">
+                <label htmlFor="member-full-name">Nombre</label>
+                <input
+                  id="member-full-name"
+                  name="fullName"
+                  onChange={handleMemberChange}
+                  value={memberForm.fullName}
+                />
+              </div>
+              <div className="field">
                 <label htmlFor="member-role">Rol</label>
                 <select
                   id="member-role"
@@ -369,14 +466,14 @@ export function PlatformDashboardPage() {
                   onChange={handleMemberChange}
                   value={memberForm.role}
                 >
-                  <option value="lote_admin">Lote Admin</option>
                   <option value="lote_editor">Lote Editor</option>
                   <option value="lote_viewer">Lote Viewer</option>
+                  <option value="lote_admin">Lote Admin</option>
                 </select>
               </div>
               <button className="btn" type="submit">
                 <Users size={18} />
-                Vincular usuario
+                Invitar / vincular usuario
               </button>
             </form>
           </section>
@@ -410,11 +507,33 @@ export function PlatformDashboardPage() {
                     <strong>Usuarios</strong>
                     {lote.members.length ? (
                       lote.members.map((member) => (
-                        <div className="inline-row muted" key={member.id}>
-                          <span>
-                            {member.profile?.full_name || member.profile?.email || member.user_id}
-                          </span>
-                          <span>{member.role}</span>
+                        <div className="stack-sm" key={member.id}>
+                          <div className="inline-row muted">
+                            <span>
+                              {member.profile?.full_name || member.profile?.email || member.user_id}
+                            </span>
+                            <span>{member.role}</span>
+                          </div>
+                          <div className="inline-row">
+                            <select
+                              value={member.role}
+                              onChange={(event) =>
+                                handleRoleChange(lote.id, member.user_id, event.target.value)
+                              }
+                            >
+                              <option value="lote_admin">Lote Admin</option>
+                              <option value="lote_editor">Lote Editor</option>
+                              <option value="lote_viewer">Lote Viewer</option>
+                            </select>
+                            <button
+                              className="btn-outline"
+                              onClick={() => handleRemoveAccess(lote.id, member.user_id)}
+                              type="button"
+                            >
+                              <Trash2 size={16} />
+                              Quitar acceso
+                            </button>
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -423,6 +542,7 @@ export function PlatformDashboardPage() {
                   </div>
                   <div className="hero-actions">
                     <a className="btn" href={`/${lote.slug}/admin`}>
+                      <Pencil size={16} />
                       Entrar al lote
                     </a>
                     <a className="btn-outline" href={`/${lote.slug}`} target="_blank" rel="noreferrer">

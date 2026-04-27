@@ -20,9 +20,11 @@ begin
     dominio_personalizado,
     telefono,
     whatsapp,
+    email_contacto,
     facebook_page_id,
     activo,
-    config_estetica
+    config_estetica,
+    config_contenido
   )
   values (
     demo_lote_id,
@@ -31,6 +33,7 @@ begin
     'demo.autosnorte.mx',
     '8181234567',
     '528181234567',
+    'ventas@autosnortedemo.mx',
     'autos-norte-demo',
     true,
     jsonb_build_object(
@@ -42,6 +45,19 @@ begin
       'color_texto', '#101828',
       'color_muted', '#667085',
       'logo_url', 'https://images.unsplash.com/photo-1485291571150-772bcfc10da5?auto=format&fit=crop&w=240&q=80'
+    ),
+    jsonb_build_object(
+      'hero_title', 'Seminuevos seleccionados para venderse rápido.',
+      'hero_subtitle', 'Una experiencia clara, móvil y directa para prospectos que quieren hablar por WhatsApp hoy.',
+      'intro_title', 'Autos listos para mostrarse bien y vender mejor.',
+      'intro_body', 'Autos Norte Demo combina catálogo público, contacto inmediato y administración centralizada para el lote.',
+      'about_title', '¿Por qué comprar aquí?',
+      'about_body', 'Inventario revisado, atención rápida y seguimiento comercial desde el primer contacto.',
+      'contact_title', 'Agenda una visita o pide información hoy.',
+      'contact_body', 'Escríbenos por WhatsApp y recibe respuesta directa del lote.',
+      'cta_primary_label', 'Ver inventario',
+      'cta_secondary_label', 'Hablar por WhatsApp',
+      'powered_by_label', 'Powered by cobalto.blue'
     )
   )
   on conflict (id) do update
@@ -51,9 +67,11 @@ begin
     dominio_personalizado = excluded.dominio_personalizado,
     telefono = excluded.telefono,
     whatsapp = excluded.whatsapp,
+    email_contacto = excluded.email_contacto,
     facebook_page_id = excluded.facebook_page_id,
     activo = excluded.activo,
     config_estetica = excluded.config_estetica,
+    config_contenido = excluded.config_contenido,
     updated_at = timezone('utc', now());
 
   select id

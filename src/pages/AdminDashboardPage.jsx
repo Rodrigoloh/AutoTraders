@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { LayoutDashboard, LogOut, Smartphone } from 'lucide-react';
+import { LayoutDashboard, LogOut, Smartphone, Save, UserPlus, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
 import { InventoryList } from '../components/InventoryList';
 import { KpiSummary } from '../components/KpiSummary';
 import { KpiChart } from '../components/KpiChart';
+import { inviteLoteUser, updateLoteMember } from '../lib/loteUsers';
 
 function formatCompact(number) {
   return new Intl.NumberFormat('es-MX', {
@@ -55,7 +56,30 @@ export function AdminDashboardPage() {
   const { tenant, slug } = useTenantTheme();
   const [autos, setAutos] = useState([]);
   const [metrics, setMetrics] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [sessionRole, setSessionRole] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    fullName: '',
+    role: 'lote_editor',
+  });
+  const [contentForm, setContentForm] = useState({
+    email_contacto: '',
+    telefono: '',
+    whatsapp: '',
+    hero_title: '',
+    hero_subtitle: '',
+    intro_title: '',
+    intro_body: '',
+    about_title: '',
+    about_body: '',
+    contact_title: '',
+    contact_body: '',
+    powered_by_label: 'Powered by cobalto.blue',
+  });
 
   const loadDashboard = async () => {
     if (!tenant?.id) {
@@ -64,7 +88,18 @@ export function AdminDashboardPage() {
 
     setIsLoading(true);
 
-    const [{ data: autosData }, { data: metricsData }] = await Promise.all([
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const [
+      { data: autosData },
+      { data: metricsData },
+      { data: membersData },
+      { data: profilesData },
+      { data: loteData },
+      { data: ownMembership },
+    ] = await Promise.all([
       supabase
         .from('inventario')
         .select('id, marca, modelo, anio, version, precio, moneda, ciudad, estado, estatus, imagenes')
@@ -76,10 +111,47 @@ export function AdminDashboardPage() {
         .eq('lote_id', tenant.id)
         .gte('fecha', getLast7DaysRange())
         .order('fecha', { ascending: true }),
+      supabase
+        .from('lote_usuarios')
+        .select('id, user_id, role, created_at')
+        .eq('lote_id', tenant.id)
+        .order('created_at', { ascending: true }),
+      supabase.from('profiles').select('id, email, full_name'),
+      supabase
+        .from('lotes')
+        .select('email_contacto, telefono, whatsapp, config_contenido')
+        .eq('id', tenant.id)
+        .single(),
+      session?.user.app_metadata?.platform_role === 'super_admin'
+        ? Promise.resolve({ data: { role: 'super_admin' } })
+        : supabase
+            .from('lote_usuarios')
+            .select('role')
+            .eq('lote_id', tenant.id)
+            .eq('user_id', session?.user.id ?? '')
+            .maybeSingle(),
     ]);
 
     setAutos(autosData ?? []);
     setMetrics(metricsData ?? []);
+    setMembers(membersData ?? []);
+    setProfiles(profilesData ?? []);
+    setSessionRole(ownMembership?.role ?? '');
+    setContentForm({
+      email_contacto: loteData?.email_contacto ?? '',
+      telefono: loteData?.telefono ?? '',
+      whatsapp: loteData?.whatsapp ?? '',
+      hero_title: loteData?.config_contenido?.hero_title ?? '',
+      hero_subtitle: loteData?.config_contenido?.hero_subtitle ?? '',
+      intro_title: loteData?.config_contenido?.intro_title ?? '',
+      intro_body: loteData?.config_contenido?.intro_body ?? '',
+      about_title: loteData?.config_contenido?.about_title ?? '',
+      about_body: loteData?.config_contenido?.about_body ?? '',
+      contact_title: loteData?.config_contenido?.contact_title ?? '',
+      contact_body: loteData?.config_contenido?.contact_body ?? '',
+      powered_by_label:
+        loteData?.config_contenido?.powered_by_label ?? 'Powered by cobalto.blue',
+    });
     setIsLoading(false);
   };
 
@@ -106,6 +178,93 @@ export function AdminDashboardPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.assign(`/${slug}/admin/login`);
+  };
+
+  const canManageLote = ['lote_admin', 'super_admin'].includes(sessionRole);
+  const profileMap = useMemo(
+    () => new Map(profiles.map((profile) => [profile.id, profile])),
+    [profiles],
+  );
+
+  const handleInviteChange = (event) => {
+    const { name, value } = event.target;
+    setInviteForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleContentChange = (event) => {
+    const { name, value } = event.target;
+    setContentForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleInvite = async (event) => {
+    event.preventDefault();
+    setFeedback('');
+
+    try {
+      await inviteLoteUser({
+        loteId: tenant.id,
+        email: inviteForm.email,
+        role: inviteForm.role,
+        fullName: inviteForm.fullName,
+        redirectTo: `${window.location.origin}/${slug}/admin/login`,
+      });
+      setInviteForm({ email: '', fullName: '', role: 'lote_editor' });
+      setFeedback('Invitación enviada o usuario vinculado.');
+      await loadDashboard();
+    } catch (error) {
+      setFeedback(error.message ?? 'No se pudo invitar al usuario.');
+    }
+  };
+
+  const handleMemberAction = async ({ userId, action, role }) => {
+    setFeedback('');
+
+    try {
+      await updateLoteMember({
+        loteId: tenant.id,
+        userId,
+        action,
+        role,
+      });
+      setFeedback(action === 'remove_access' ? 'Acceso removido.' : 'Rol actualizado.');
+      await loadDashboard();
+    } catch (error) {
+      setFeedback(error.message ?? 'No se pudo actualizar el usuario.');
+    }
+  };
+
+  const saveContent = async (event) => {
+    event.preventDefault();
+    setFeedback('');
+
+    const payload = {
+      email_contacto: contentForm.email_contacto || null,
+      telefono: contentForm.telefono || null,
+      whatsapp: contentForm.whatsapp || null,
+      config_contenido: {
+        hero_title: contentForm.hero_title,
+        hero_subtitle: contentForm.hero_subtitle,
+        intro_title: contentForm.intro_title,
+        intro_body: contentForm.intro_body,
+        about_title: contentForm.about_title,
+        about_body: contentForm.about_body,
+        contact_title: contentForm.contact_title,
+        contact_body: contentForm.contact_body,
+        powered_by_label: contentForm.powered_by_label,
+        cta_primary_label: 'Ver inventario',
+        cta_secondary_label: 'Hablar por WhatsApp',
+      },
+    };
+
+    const { error } = await supabase.from('lotes').update(payload).eq('id', tenant.id);
+
+    if (error) {
+      setFeedback(error.message);
+      return;
+    }
+
+    setFeedback('Contenido del lote actualizado.');
+    await loadDashboard();
   };
 
   return (
@@ -200,6 +359,227 @@ export function AdminDashboardPage() {
 
           <InventoryForm loteId={tenant?.id} onCreated={loadDashboard} />
           <InventoryList autos={autos} onRefresh={loadDashboard} />
+          {feedback ? <div className="panel-card muted">{feedback}</div> : null}
+          {canManageLote ? (
+            <section className="dashboard-grid">
+              <form className="form-card stack-md" onSubmit={handleInvite}>
+                <div className="inline-row">
+                  <div>
+                    <h2 className="heading-md">Invitar usuario del lote</h2>
+                    <p className="muted">Invita editores o viewers por correo.</p>
+                  </div>
+                  <UserPlus size={20} />
+                </div>
+                <div className="field">
+                  <label htmlFor="invite-email">Email</label>
+                  <input
+                    id="invite-email"
+                    name="email"
+                    onChange={handleInviteChange}
+                    required
+                    type="email"
+                    value={inviteForm.email}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="invite-full-name">Nombre</label>
+                  <input
+                    id="invite-full-name"
+                    name="fullName"
+                    onChange={handleInviteChange}
+                    value={inviteForm.fullName}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="invite-role">Rol</label>
+                  <select
+                    id="invite-role"
+                    name="role"
+                    onChange={handleInviteChange}
+                    value={inviteForm.role}
+                  >
+                    <option value="lote_editor">Lote Editor</option>
+                    <option value="lote_viewer">Lote Viewer</option>
+                    {sessionRole === 'super_admin' ? (
+                      <option value="lote_admin">Lote Admin</option>
+                    ) : null}
+                  </select>
+                </div>
+                <button className="btn" type="submit">
+                  <UserPlus size={18} />
+                  Invitar usuario
+                </button>
+                <div className="stack-sm">
+                  {members.map((member) => (
+                    <div className="inventory-item" key={member.id}>
+                      <div className="inline-row">
+                        <strong>
+                          {profileMap.get(member.user_id)?.full_name ||
+                            profileMap.get(member.user_id)?.email ||
+                            member.user_id}
+                        </strong>
+                        <span className="status-pill">{member.role}</span>
+                      </div>
+                      <div className="inventory-actions">
+                        <select
+                          value={member.role}
+                          onChange={(event) =>
+                            handleMemberAction({
+                              userId: member.user_id,
+                              action: 'change_role',
+                              role: event.target.value,
+                            })
+                          }
+                        >
+                          <option value="lote_admin">Lote Admin</option>
+                          <option value="lote_editor">Lote Editor</option>
+                          <option value="lote_viewer">Lote Viewer</option>
+                        </select>
+                        <button
+                          className="btn-outline"
+                          onClick={() =>
+                            handleMemberAction({
+                              userId: member.user_id,
+                              action: 'remove_access',
+                            })
+                          }
+                          type="button"
+                        >
+                          <Trash2 size={16} />
+                          Quitar acceso
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </form>
+
+              <form className="form-card stack-md" onSubmit={saveContent}>
+                <div className="inline-row">
+                  <div>
+                    <h2 className="heading-md">Textos y contacto del lote</h2>
+                    <p className="muted">Edita el contenido visible de la demo por cliente.</p>
+                  </div>
+                  <Save size={20} />
+                </div>
+                <div className="form-grid">
+                  <div className="field">
+                    <label htmlFor="email_contacto">Email de contacto</label>
+                    <input
+                      id="email_contacto"
+                      name="email_contacto"
+                      onChange={handleContentChange}
+                      type="email"
+                      value={contentForm.email_contacto}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="telefono">Teléfono</label>
+                    <input
+                      id="telefono"
+                      name="telefono"
+                      onChange={handleContentChange}
+                      value={contentForm.telefono}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="whatsapp">WhatsApp</label>
+                    <input
+                      id="whatsapp"
+                      name="whatsapp"
+                      onChange={handleContentChange}
+                      value={contentForm.whatsapp}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="powered_by_label">Powered by</label>
+                    <input
+                      id="powered_by_label"
+                      name="powered_by_label"
+                      onChange={handleContentChange}
+                      value={contentForm.powered_by_label}
+                    />
+                  </div>
+                  <div className="field" data-span="full">
+                    <label htmlFor="hero_title">Hero title</label>
+                    <input
+                      id="hero_title"
+                      name="hero_title"
+                      onChange={handleContentChange}
+                      value={contentForm.hero_title}
+                    />
+                  </div>
+                  <div className="field" data-span="full">
+                    <label htmlFor="hero_subtitle">Hero subtitle</label>
+                    <textarea
+                      id="hero_subtitle"
+                      name="hero_subtitle"
+                      onChange={handleContentChange}
+                      value={contentForm.hero_subtitle}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="intro_title">Intro title</label>
+                    <input
+                      id="intro_title"
+                      name="intro_title"
+                      onChange={handleContentChange}
+                      value={contentForm.intro_title}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="about_title">About title</label>
+                    <input
+                      id="about_title"
+                      name="about_title"
+                      onChange={handleContentChange}
+                      value={contentForm.about_title}
+                    />
+                  </div>
+                  <div className="field" data-span="full">
+                    <label htmlFor="intro_body">Intro body</label>
+                    <textarea
+                      id="intro_body"
+                      name="intro_body"
+                      onChange={handleContentChange}
+                      value={contentForm.intro_body}
+                    />
+                  </div>
+                  <div className="field" data-span="full">
+                    <label htmlFor="about_body">About body</label>
+                    <textarea
+                      id="about_body"
+                      name="about_body"
+                      onChange={handleContentChange}
+                      value={contentForm.about_body}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="contact_title">Contact title</label>
+                    <input
+                      id="contact_title"
+                      name="contact_title"
+                      onChange={handleContentChange}
+                      value={contentForm.contact_title}
+                    />
+                  </div>
+                  <div className="field" data-span="full">
+                    <label htmlFor="contact_body">Contact body</label>
+                    <textarea
+                      id="contact_body"
+                      name="contact_body"
+                      onChange={handleContentChange}
+                      value={contentForm.contact_body}
+                    />
+                  </div>
+                </div>
+                <button className="btn" type="submit">
+                  <Save size={18} />
+                  Guardar contenido
+                </button>
+              </form>
+            </section>
+          ) : null}
         </div>
       </main>
     </>

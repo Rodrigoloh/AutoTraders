@@ -25,9 +25,11 @@ create table if not exists public.lotes (
   dominio_personalizado text,
   telefono text,
   whatsapp text,
+  email_contacto text,
   facebook_page_id text,
   activo boolean not null default true,
   config_estetica jsonb not null default '{}'::jsonb,
+  config_contenido jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

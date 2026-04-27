@@ -9,6 +9,7 @@ export function PublicCatalogPage() {
   const { tenant, theme, isLoading } = useTenantTheme();
   const [autos, setAutos] = useState([]);
   const [loadingAutos, setLoadingAutos] = useState(true);
+  const content = tenant?.config_contenido ?? {};
 
   useEffect(() => {
     let ignore = false;
@@ -89,15 +90,17 @@ export function PublicCatalogPage() {
             <div className="hero-grid">
               <div className="hero-copy">
                 <span className="eyebrow">Plantilla ecommerce para lotes de autos</span>
-                <h1 className="heading-xl">Inventario listo para vender desde el celular.</h1>
+                <h1 className="heading-xl">
+                  {content.hero_title ?? 'Inventario listo para vender desde el celular.'}
+                </h1>
                 <p className="muted">
-                  Diseño mobile-first, contacto inmediato por WhatsApp y base para SEO,
-                  campañas y administración multi-tenant.
+                  {content.hero_subtitle ??
+                    'Diseño mobile-first, contacto inmediato por WhatsApp y base para SEO, campañas y administración multi-tenant.'}
                 </p>
                 <div className="hero-actions">
                   <a className="btn" href="#catalogo">
                     <SearchCheck size={18} />
-                    Ver autos
+                    {content.cta_primary_label ?? 'Ver autos'}
                   </a>
                   <a
                     className="btn-outline"
@@ -106,16 +109,18 @@ export function PublicCatalogPage() {
                     rel="noreferrer"
                   >
                     <MessageCircle size={18} />
-                    Contactar lote
+                    {content.cta_secondary_label ?? 'Contactar lote'}
                   </a>
                 </div>
               </div>
               <div className="panel-card stack-md">
                 <span className="eyebrow">Personalizable por cliente</span>
-                <h2 className="heading-md">Marca, colores y operación centralizada.</h2>
+                <h2 className="heading-md">
+                  {content.intro_title ?? 'Marca, colores y operación centralizada.'}
+                </h2>
                 <p className="muted">
-                  Cada lote puede tener identidad propia y tú conservas el control de SEO,
-                  campañas y distribución hacia Facebook o WhatsApp.
+                  {content.intro_body ??
+                    'Cada lote puede tener identidad propia y tú conservas el control de SEO, campañas y distribución hacia Facebook o WhatsApp.'}
                 </p>
                 <div className="inline-row">
                   <span className="status-pill">{autos.length} autos publicados</span>
@@ -140,6 +145,37 @@ export function PublicCatalogPage() {
               loteId={tenant?.id}
               whatsappNumber={tenant?.whatsapp}
             />
+          </section>
+
+          <section className="dashboard-grid">
+            <article className="panel-card stack-md">
+              <div>
+                <h2 className="heading-md">{content.about_title ?? '¿Por qué este lote?'}</h2>
+                <p className="muted">
+                  {content.about_body ??
+                    'Atención rápida, inventario visible y seguimiento comercial centralizado.'}
+                </p>
+              </div>
+            </article>
+            <article className="panel-card stack-md">
+              <div>
+                <h2 className="heading-md">
+                  {content.contact_title ?? 'Contacto e información del lote'}
+                </h2>
+                <p className="muted">
+                  {content.contact_body ??
+                    'Edita este texto desde el dashboard del lote para personalizar la demo por cliente.'}
+                </p>
+              </div>
+              <div className="stack-sm">
+                {tenant?.whatsapp ? <span className="muted">WhatsApp: {tenant.whatsapp}</span> : null}
+                {tenant?.telefono ? <span className="muted">Teléfono: {tenant.telefono}</span> : null}
+                {tenant?.email_contacto ? (
+                  <span className="muted">Email: {tenant.email_contacto}</span>
+                ) : null}
+                <span className="muted">{content.powered_by_label ?? 'Powered by cobalto.blue'}</span>
+              </div>
+            </article>
           </section>
         </div>
       </main>
