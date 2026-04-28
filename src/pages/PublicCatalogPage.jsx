@@ -2,19 +2,18 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   ArrowRight,
-  Building2,
-  CarFront,
-  CircleDollarSign,
+  Facebook,
+  Instagram,
   MapPin,
-  MessageCircle,
   PhoneCall,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { recordMetric } from '../lib/metrics';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { BrandLogo } from '../components/BrandLogo.jsx';
+import { CarDetail } from '../components/CarDetail.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
@@ -26,34 +25,57 @@ function formatPrice(price, currency = 'MXN') {
   }).format(Number(price ?? 0));
 }
 
-function formatMileage(kilometraje) {
-  if (!kilometraje) {
-    return 'Kilometraje por confirmar';
-  }
-
-  return `${Number(kilometraje).toLocaleString('es-MX')} km`;
-}
-
-function locationLabel(auto) {
-  return [auto?.ciudad, auto?.estado].filter(Boolean).join(', ') || 'Monterrey, Nuevo Leon';
-}
-
 function primaryImage(auto) {
   if (Array.isArray(auto?.imagenes) && auto.imagenes.length > 0) {
     return auto.imagenes[0];
   }
 
-  return 'https://images.unsplash.com/photo-1494976688153-cbe2305abf84?auto=format&fit=crop&w=1400&q=80';
+  return demoCatalogContent.heroImage;
+}
+
+function inferVehicleType(auto) {
+  const haystack = [
+    auto?.version,
+    auto?.descripcion,
+    auto?.modelo,
+    auto?.meta_tags?.body_shape,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    haystack.includes('suv') ||
+    haystack.includes('pickup') ||
+    haystack.includes('camioneta') ||
+    haystack.includes('crossover')
+  ) {
+    return 'SUV';
+  }
+
+  if (
+    haystack.includes('amg') ||
+    haystack.includes('m ') ||
+    haystack.includes('gt') ||
+    haystack.includes('sport') ||
+    haystack.includes('deportivo') ||
+    haystack.includes('coupe') ||
+    haystack.includes('turbo')
+  ) {
+    return 'Deportivo';
+  }
+
+  return 'Sedán';
 }
 
 export function PublicCatalogPage() {
   const { tenant, theme, isLoading } = useTenantTheme();
   const [autos, setAutos] = useState([]);
   const [loadingAutos, setLoadingAutos] = useState(true);
+  const [selectedAutoId, setSelectedAutoId] = useState(null);
   const [filters, setFilters] = useState({
-    make: 'all',
-    model: 'all',
-    priceCap: 'all',
+    vehicleType: 'all',
+    budgetCap: 'all',
   });
   const deferredFilters = useDeferredValue(filters);
   const content = tenant?.config_contenido ?? {};
@@ -73,7 +95,7 @@ export function PublicCatalogPage() {
       const { data, error } = await supabase
         .from('inventario')
         .select(
-          'id, lote_id, marca, modelo, anio, version, precio, moneda, kilometraje, ciudad, estado, estatus, imagenes, meta_tags',
+          'id, lote_id, marca, modelo, anio, version, precio, moneda, kilometraje, ciudad, estado, estatus, imagenes, meta_tags, combustible, transmision, descripcion',
         )
         .eq('lote_id', tenant.id)
         .eq('estatus', 'disponible')
@@ -92,73 +114,95 @@ export function PublicCatalogPage() {
     };
   }, [tenant?.id]);
 
-  const makeOptions = useMemo(
-    () => ['all', ...new Set(autos.map((auto) => auto.marca).filter(Boolean))],
-    [autos],
-  );
+  const maxBudget = useMemo(() => {
+    const prices = autos.map((auto) => Number(auto.precio ?? 0)).filter(Boolean);
 
-  const modelOptions = useMemo(() => {
-    const scopedAutos =
-      filters.make === 'all' ? autos : autos.filter((auto) => auto.marca === filters.make);
+    if (!prices.length) {
+      return 1200000;
+    }
 
-    return ['all', ...new Set(scopedAutos.map((auto) => auto.modelo).filter(Boolean))];
-  }, [autos, filters.make]);
+    const rawMax = Math.max(...prices);
+    return Math.ceil(rawMax / 100000) * 100000;
+  }, [autos]);
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      budgetCap: current.budgetCap === 'all' ? String(maxBudget) : current.budgetCap,
+    }));
+  }, [maxBudget]);
 
   const filteredAutos = useMemo(() => {
     return autos.filter((auto) => {
-      const matchesMake =
-        deferredFilters.make === 'all' || auto.marca === deferredFilters.make;
-      const matchesModel =
-        deferredFilters.model === 'all' || auto.modelo === deferredFilters.model;
-      const matchesPrice =
-        deferredFilters.priceCap === 'all' ||
-        Number(auto.precio ?? 0) <= Number(deferredFilters.priceCap);
+      const matchesType =
+        deferredFilters.vehicleType === 'all' ||
+        inferVehicleType(auto) === deferredFilters.vehicleType;
+      const matchesBudget =
+        deferredFilters.budgetCap === 'all' ||
+        Number(auto.precio ?? 0) <= Number(deferredFilters.budgetCap);
 
-      return matchesMake && matchesModel && matchesPrice;
+      return matchesType && matchesBudget;
     });
   }, [autos, deferredFilters]);
 
   const featuredAuto = filteredAutos[0] ?? autos[0] ?? null;
+
+  useEffect(() => {
+    if (!selectedAutoId && featuredAuto?.id) {
+      setSelectedAutoId(featuredAuto.id);
+      return;
+    }
+
+    if (selectedAutoId && !filteredAutos.some((auto) => auto.id === selectedAutoId)) {
+      setSelectedAutoId(filteredAutos[0]?.id ?? autos[0]?.id ?? null);
+    }
+  }, [selectedAutoId, filteredAutos, autos, featuredAuto]);
+
+  const selectedAuto =
+    filteredAutos.find((auto) => auto.id === selectedAutoId) ??
+    autos.find((auto) => auto.id === selectedAutoId) ??
+    featuredAuto;
+
   const seo = useMemo(() => {
     const featuredMeta = featuredAuto?.meta_tags ?? {};
 
     return {
       title:
         featuredMeta.title ??
-        `${tenant?.nombre ?? theme.brandName} | Seminuevos en Monterrey`,
+        `${tenant?.nombre ?? theme.brandName} | Seminuevos premium en Monterrey`,
       description:
         featuredMeta.description ??
-        `Explora el inventario de ${tenant?.nombre ?? theme.brandName} y agenda por WhatsApp desde Monterrey.`,
+        `Explora el inventario de ${tenant?.nombre ?? theme.brandName} y aparta tu siguiente auto desde Monterrey.`,
     };
   }, [featuredAuto, tenant?.nombre, theme.brandName]);
 
-  const heroStats = useMemo(() => {
-    const uniqueBrands = new Set(autos.map((auto) => auto.marca).filter(Boolean)).size;
-
-    return [
-      { label: 'Inventario activo', value: `${autos.length} unidades` },
-      { label: 'Marcas visibles', value: `${uniqueBrands || 1} marcas` },
-      { label: 'Atencion', value: 'WhatsApp y llamada' },
-    ];
-  }, [autos]);
-
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
-    setFilters((current) => {
-      if (name === 'make') {
-        return { ...current, make: value, model: 'all' };
-      }
-
-      return { ...current, [name]: value };
-    });
+    setFilters((current) => ({ ...current, [name]: value }));
   };
 
   const clearFilters = () => {
     setFilters({
-      make: 'all',
-      model: 'all',
-      priceCap: 'all',
+      vehicleType: 'all',
+      budgetCap: String(maxBudget),
     });
+  };
+
+  const handleReservation = async (auto) => {
+    await recordMetric({
+      autoId: auto.id,
+      loteId: tenant?.id,
+      eventType: 'click_whatsapp',
+    });
+
+    const phone = (tenant?.whatsapp ?? '').replace(/\D/g, '');
+    const text = encodeURIComponent(
+      `Hola Lote del Norte, me interesa el ${auto.marca} ${auto.modelo} ${auto.anio} ID: ${auto.id}. ¿Sigue disponible?`,
+    );
+
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${text}`, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const whatsappHref = tenant?.whatsapp
@@ -204,12 +248,9 @@ export function PublicCatalogPage() {
                   </a>
                 ))}
               </nav>
-              <a className="btn-outline" href={`/${tenant?.slug ?? 'demo'}/admin`}>
-                Panel admin
-              </a>
             </header>
 
-            <div className="catalog-hero-grid">
+            <div className="catalog-hero-grid prompt-hero-grid">
               <div className="catalog-copy stack-md">
                 <span className="catalog-eyebrow">
                   {content.hero_eyebrow ?? demoCatalogContent.hero.eyebrow}
@@ -226,135 +267,74 @@ export function PublicCatalogPage() {
                     <ArrowRight size={18} />
                   </a>
                   <a className="btn-outline" href={whatsappHref} target="_blank" rel="noreferrer">
-                    <MessageCircle size={18} />
+                    <PhoneCall size={18} />
                     {content.cta_secondary_label ?? demoCatalogContent.hero.secondaryCta}
                   </a>
                 </div>
-                <div className="catalog-stat-row">
-                  {heroStats.map((stat) => (
-                    <article className="catalog-stat-card" key={stat.label}>
-                      <strong>{stat.value}</strong>
-                      <span>{stat.label}</span>
-                    </article>
-                  ))}
-                </div>
               </div>
 
-              <div className="featured-vehicle-shell">
-                {featuredAuto ? (
-                  <>
-                    <div className="featured-vehicle-media">
-                      <img
-                        src={primaryImage(featuredAuto)}
-                        alt={`${featuredAuto.marca} ${featuredAuto.modelo}`}
-                      />
-                    </div>
-                    <div className="featured-vehicle-card">
-                      <div className="inline-row">
-                        <span className="catalog-eyebrow">
-                          {demoCatalogContent.featured.eyebrow}
-                        </span>
-                        <span className="featured-price">
-                          {formatPrice(featuredAuto.precio, featuredAuto.moneda)}
-                        </span>
-                      </div>
-                      <div className="stack-sm">
-                        <h2 className="heading-lg">
-                          {featuredAuto.marca} {featuredAuto.modelo}
-                        </h2>
-                        <p className="muted">
-                          {featuredAuto.version || demoCatalogContent.featured.summaryTitle}
-                        </p>
-                      </div>
-                      <div className="featured-spec-grid">
-                        <div>
-                          <span>Ano</span>
-                          <strong>{featuredAuto.anio}</strong>
-                        </div>
-                        <div>
-                          <span>Kilometraje</span>
-                          <strong>{formatMileage(featuredAuto.kilometraje)}</strong>
-                        </div>
-                        <div>
-                          <span>Ubicacion</span>
-                          <strong>{locationLabel(featuredAuto)}</strong>
-                        </div>
-                        <div>
-                          <span>Estatus</span>
-                          <strong>{featuredAuto.estatus}</strong>
-                        </div>
-                      </div>
-                      <ul className="catalog-bullet-list">
-                        {demoCatalogContent.featured.detailItems.map((item) => (
-                          <li key={item}>
-                            <ShieldCheck size={16} />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="catalog-actions">
-                        <a className="btn" href={whatsappHref} target="_blank" rel="noreferrer">
-                          <PhoneCall size={18} />
-                          {demoCatalogContent.featured.reserveLabel}
-                        </a>
-                        <a className="btn-outline" href="#contacto">
-                          <Sparkles size={18} />
-                          {demoCatalogContent.featured.viewLabel}
-                        </a>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="featured-vehicle-card">
-                    <h2 className="heading-lg">Tu inventario aparecera aqui</h2>
-                    <p className="muted">
-                      Carga autos desde el panel admin para ver esta portada con look premium.
-                    </p>
-                  </div>
-                )}
+              <div
+                className="hero-stage"
+                style={{
+                  backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.08), rgba(0,0,0,0.38)), url("${featuredAuto ? primaryImage(featuredAuto) : demoCatalogContent.heroImage}")`,
+                }}
+              >
+                <div className="hero-stage-overlay">
+                  <span className="catalog-eyebrow">Placeholder 16:9 para portada</span>
+                  <strong>
+                    Coloca aquí una foto horizontal HD del auto cargada hacia la derecha.
+                  </strong>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="catalog-filter-card" id="inventario">
+          <section className="catalog-search-strip" id="inventario">
             <div className="catalog-section-head">
               <div>
-                <span className="catalog-eyebrow">Inventario publico</span>
+                <span className="catalog-eyebrow">Buscador minimalista</span>
                 <h2 className="heading-lg">{demoCatalogContent.filters.title}</h2>
               </div>
               <p className="muted">{demoCatalogContent.filters.subtitle}</p>
             </div>
-            <div className="catalog-filter-grid">
+
+            <div className="catalog-filter-grid prompt-filter-grid">
               <label className="field">
-                <span>{demoCatalogContent.filters.makeLabel}</span>
-                <select name="make" onChange={handleFilterChange} value={filters.make}>
-                  {makeOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item === 'all' ? 'Todas' : item}
-                    </option>
-                  ))}
+                <span>{demoCatalogContent.filters.typeLabel}</span>
+                <select
+                  name="vehicleType"
+                  onChange={handleFilterChange}
+                  value={filters.vehicleType}
+                >
+                  <option value="all">Todos</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Sedán">Sedán</option>
+                  <option value="Deportivo">Deportivo</option>
                 </select>
               </label>
-              <label className="field">
-                <span>{demoCatalogContent.filters.modelLabel}</span>
-                <select name="model" onChange={handleFilterChange} value={filters.model}>
-                  {modelOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item === 'all' ? 'Todos' : item}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
+
+              <label className="field field-range">
                 <span>{demoCatalogContent.filters.priceLabel}</span>
-                <select name="priceCap" onChange={handleFilterChange} value={filters.priceCap}>
-                  {demoCatalogContent.filters.priceOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="range-shell">
+                  <input
+                    max={maxBudget}
+                    min="200000"
+                    name="budgetCap"
+                    onChange={handleFilterChange}
+                    step="50000"
+                    type="range"
+                    value={filters.budgetCap === 'all' ? maxBudget : filters.budgetCap}
+                  />
+                  <strong>
+                    Ver autos de $200k a{' '}
+                    {formatPrice(
+                      filters.budgetCap === 'all' ? maxBudget : filters.budgetCap,
+                      'MXN',
+                    )}
+                  </strong>
+                </div>
               </label>
+
               <button className="btn-soft" onClick={clearFilters} type="button">
                 <SlidersHorizontal size={18} />
                 {demoCatalogContent.filters.clearLabel}
@@ -362,36 +342,42 @@ export function PublicCatalogPage() {
             </div>
           </section>
 
-          <CatalogGrid
-            autos={filteredAutos}
-            loteId={tenant?.id}
-            whatsappNumber={tenant?.whatsapp}
-          />
+          <CatalogGrid autos={filteredAutos} onReserve={handleReservation} onSelect={(auto) => setSelectedAutoId(auto.id)} />
 
-          <section className="catalog-info-grid" id="servicios">
-            {demoCatalogContent.trustSection.cards.map((card, index) => {
-              const icons = [CarFront, CircleDollarSign, Building2];
-              const Icon = icons[index] ?? Sparkles;
+          {selectedAuto ? <CarDetail auto={selectedAuto} onReserve={handleReservation} /> : null}
 
-              return (
-                <article className="catalog-info-card" key={card.title}>
-                  <span className="catalog-icon-badge">
-                    <Icon size={18} />
-                  </span>
-                  <h3 className="heading-md">{card.title}</h3>
-                  <p className="muted">{card.body}</p>
-                </article>
-              );
-            })}
-          </section>
-
-          <section className="editorial-grid">
-            {demoCatalogContent.editorialSections.map((section) => (
-              <article className="editorial-card" key={section.title}>
-                <h3 className="heading-md">{section.title}</h3>
-                <p className="muted">{section.body}</p>
-              </article>
-            ))}
+          <section className="editorial-grid prompt-editorial-grid" id="servicios">
+            <article className="editorial-card">
+              <h3 className="heading-md">Compra con confianza</h3>
+              <p className="muted">
+                Unidades con atención directa, seguimiento ágil y presentación pensada para
+                compradores en Monterrey y San Pedro.
+              </p>
+            </article>
+            <article className="editorial-card">
+              <h3 className="heading-md">Aparta sin fricción</h3>
+              <ul className="catalog-bullet-list">
+                <li>
+                  <ShieldCheck size={16} />
+                  <span>Reserva digital y contacto inmediato con el asesor.</span>
+                </li>
+                <li>
+                  <ShieldCheck size={16} />
+                  <span>Crédito inmediato con solo INE.</span>
+                </li>
+                <li>
+                  <ShieldCheck size={16} />
+                  <span>Consignación directa y toma de seminuevo.</span>
+                </li>
+              </ul>
+            </article>
+            <article className="editorial-card">
+              <h3 className="heading-md">Demo editable por cliente</h3>
+              <p className="muted">
+                Los textos base viven en <code>src/lib/demoCatalogContent.js</code> y el copy
+                visible del lote también puede editarse desde el dashboard admin.
+              </p>
+            </article>
           </section>
 
           <footer className="catalog-footer" id="contacto">
@@ -403,12 +389,19 @@ export function PublicCatalogPage() {
                 submark={brandSubmark}
                 className="brand-logo-image"
               />
-              <h2 className="heading-lg">{demoCatalogContent.footer.title}</h2>
+              <h2 className="heading-lg">Lote de Autos del Norte</h2>
               <p className="muted">
-                {content.contact_body ?? demoCatalogContent.footer.body}
+                Atención directa para compradores en Monterrey. Agenda visita, pide video o
+                solicita inventario desde WhatsApp.
               </p>
             </div>
+
             <div className="catalog-footer-grid">
+              <article className="catalog-footer-card">
+                <span className="catalog-eyebrow">Dirección demo</span>
+                <strong>{demoCatalogContent.footer.address}</strong>
+                <span>{demoCatalogContent.footer.hours}</span>
+              </article>
               <article className="catalog-footer-card">
                 <span className="catalog-eyebrow">Contacto</span>
                 <div className="stack-sm">
@@ -418,21 +411,29 @@ export function PublicCatalogPage() {
                 </div>
               </article>
               <article className="catalog-footer-card">
-                <span className="catalog-eyebrow">Ubicacion demo</span>
-                <strong>{demoCatalogContent.footer.address}</strong>
-                <span>{demoCatalogContent.footer.hours}</span>
-              </article>
-              <article className="catalog-footer-card catalog-map-placeholder">
-                <span className="catalog-eyebrow">Mapa</span>
-                <strong>{demoCatalogContent.footer.mapLabel}</strong>
+                <span className="catalog-eyebrow">Redes</span>
+                <div className="social-row">
+                  <a href="#contacto" aria-label="Facebook demo">
+                    <Facebook size={18} />
+                  </a>
+                  <a href="#contacto" aria-label="Instagram demo">
+                    <Instagram size={18} />
+                  </a>
+                </div>
                 <span className="muted">
-                  Sustituye este bloque por un iframe o imagen del showroom.
+                  Reemplaza estos enlaces por los perfiles reales del lote.
                 </span>
               </article>
             </div>
+
             <div className="catalog-footer-legal">
-              <span>{content.powered_by_label ?? 'Powered by cobalto.blue'}</span>
-              <span>{demoCatalogContent.footer.legal}</span>
+              <span className="inline-row">
+                <MapPin size={15} />
+                {demoCatalogContent.footer.address}
+              </span>
+              <a href="https://cobalto.blue" rel="noreferrer" target="_blank">
+                Powered by Cobalto.blue
+              </a>
             </div>
           </footer>
         </div>

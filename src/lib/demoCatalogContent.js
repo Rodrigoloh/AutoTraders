@@ -9,6 +9,8 @@ export const demoCatalogContent = {
     header: '/branding/demo-lote/logo-light.svg',
     footer: '/branding/demo-lote/logo-dark.svg',
   },
+  heroImage:
+    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1920&q=80',
   brand: {
     wordmark: 'Lote Demo MTY',
     submark: 'Seminuevos Premium',
@@ -21,24 +23,23 @@ export const demoCatalogContent = {
   ],
   hero: {
     eyebrow: 'Monterrey, Nuevo Leon',
-    title: 'Seminuevos premium con entrega agil en Monterrey.',
+    title: 'Tu proximo auto deportivo esta en el Norte.',
     subtitle:
-      'Una vitrina mas limpia para SUVs, sedanes y deportivos seleccionados, con contacto directo por WhatsApp y presentacion lista para cerrar desde celular o escritorio.',
-    primaryCta: 'Ver inventario',
+      'Una experiencia mobile-first para lotes premium en Monterrey: inventario limpio, contacto directo y mensajes comerciales listos para convertir visitas en citas.',
+    primaryCta: 'Explorar inventario',
     secondaryCta: 'Hablar con asesor',
     stats: [
       { label: 'Atencion', value: 'WhatsApp directo' },
       { label: 'Operacion', value: 'MTY y area metro' },
-      { label: 'Confianza', value: 'Revision y seguimiento' },
+      { label: 'Especialidad', value: 'SUV, sedan y deportivo' },
     ],
   },
   filters: {
     title: 'Encuentra tu siguiente auto',
     subtitle:
-      'Filtra por marca, modelo y rango de precio. El demo esta orientado a un lote en Monterrey, pero puedes adaptar el copy a cualquier ciudad.',
-    makeLabel: 'Marca',
-    modelLabel: 'Modelo',
-    priceLabel: 'Precio maximo',
+      'Usa un filtro corto, visual y directo. La intención es que en móvil se sienta rápido y premium, no como una tabla administrativa.',
+    typeLabel: 'Tipo de vehículo',
+    priceLabel: 'Presupuesto máximo',
     clearLabel: 'Limpiar filtros',
     priceOptions: [
       { label: 'Sin limite', value: 'all' },
@@ -50,13 +51,13 @@ export const demoCatalogContent = {
   },
   featured: {
     eyebrow: 'Unidad destacada',
-    summaryTitle: 'Listo para apartar o agendar visita',
-    reserveLabel: 'Solicitar cotizacion',
+    summaryTitle: 'Lista para apartar o agendar visita',
+    reserveLabel: 'Reservar Ahora!',
     viewLabel: 'Pedir video',
     detailItems: [
-      'Revision visual y seguimiento comercial desde WhatsApp.',
-      'Presentacion limpia para lotes con enfoque premium.',
-      'Base editable para San Pedro, Monterrey o cualquier zona del area metropolitana.',
+      'Consignación directa y atención comercial inmediata.',
+      'Presentación limpia con look premium para cerrar más citas.',
+      'Base editable para San Pedro, Monterrey o cualquier zona del área metropolitana.',
     ],
   },
   trustSection: {
@@ -102,7 +103,7 @@ export const demoCatalogContent = {
     title: 'Agenda una visita o solicita inventario por WhatsApp',
     body:
       'Usa este bloque como cierre para Monterrey: direccion, horarios, telefono, redes o un mapa embebido mas adelante.',
-    address: 'Showroom demo, Monterrey, Nuevo Leon',
+    address: 'Av. Constitución S/N (Frente a la Macroplaza), Monterrey, N.L.',
     hours: 'Lun a Sab · 9:30 a 19:00',
     mapLabel: 'Placeholder para mapa o embed',
     legal:

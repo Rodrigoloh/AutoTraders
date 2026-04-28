@@ -1,6 +1,6 @@
 import { AutoCard } from './AutoCard';
 
-export function CatalogGrid({ autos, loteId, whatsappNumber }) {
+export function CatalogGrid({ autos, onReserve, onSelect }) {
   if (!autos.length) {
     return (
       <div className="empty-state">
@@ -16,8 +16,8 @@ export function CatalogGrid({ autos, loteId, whatsappNumber }) {
         <AutoCard
           key={auto.id}
           auto={auto}
-          loteId={loteId}
-          whatsappNumber={whatsappNumber}
+          onReserve={onReserve}
+          onSelect={onSelect}
         />
       ))}
     </section>

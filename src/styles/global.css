@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --brand-primary: #c7562a;
-  --brand-secondary: #101012;
-  --brand-accent: #f0b66f;
-  --brand-surface: #18181b;
-  --brand-text: #f7f2ee;
-  --brand-muted: #aea6a1;
+  --brand-primary: #dc2626;
+  --brand-secondary: #0a0a0a;
+  --brand-accent: #fca5a5;
+  --brand-surface: #1a1a1a;
+  --brand-text: #f9fafb;
+  --brand-muted: #d1d5db;
   --border-soft: rgba(255, 255, 255, 0.1);
   --shadow-soft: 0 24px 70px rgba(0, 0, 0, 0.34);
-  --surface-panel: rgba(18, 18, 22, 0.84);
-  --surface-panel-strong: rgba(11, 11, 14, 0.92);
+  --surface-panel: rgba(15, 15, 18, 0.84);
+  --surface-panel-strong: rgba(8, 8, 10, 0.94);
   --surface-panel-soft: rgba(255, 255, 255, 0.04);
   --field-surface: rgba(255, 255, 255, 0.06);
   --field-border: rgba(255, 255, 255, 0.12);
@@ -33,8 +33,8 @@ body,
 
 body {
   background:
-    radial-gradient(circle at top right, rgba(199, 86, 42, 0.18), transparent 28%),
-    linear-gradient(115deg, #080809 0%, #080809 39%, #1f0e0a 39%, #3b130c 100%);
+    radial-gradient(circle at top right, rgba(220, 38, 38, 0.16), transparent 28%),
+    linear-gradient(115deg, #000 0%, #000 40%, #170606 40%, #391010 100%);
   color: var(--brand-text);
 }
 
@@ -214,6 +214,10 @@ img {
 .catalog-filter-card,
 .catalog-info-grid,
 .editorial-grid,
+.detail-shell,
+.detail-gallery-grid,
+.detail-spec-grid,
+.detail-editorial-grid,
 .dashboard-grid,
 .kpi-grid,
 .form-grid,
@@ -294,6 +298,9 @@ img {
 .hero-grid,
 .catalog-info-grid,
 .editorial-grid,
+.detail-gallery-grid,
+.detail-spec-grid,
+.detail-editorial-grid,
 .catalog-grid,
 .kpi-grid,
 .inventory-grid,
@@ -301,6 +308,50 @@ img {
 .catalog-footer-grid {
   display: grid;
   gap: 18px;
+}
+
+.prompt-hero-grid {
+  align-items: center;
+}
+
+.catalog-search-strip {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 30px;
+  background: rgba(9, 9, 11, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-soft);
+}
+
+.prompt-filter-grid {
+  grid-template-columns: 1fr;
+}
+
+.hero-stage {
+  position: relative;
+  min-height: 300px;
+  border-radius: 28px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.06);
+  background-position: center;
+  background-size: cover;
+}
+
+.hero-stage-overlay {
+  position: absolute;
+  inset: auto 18px 18px 18px;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(9, 9, 11, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-stage-overlay strong {
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 .featured-vehicle-shell {
@@ -437,7 +488,7 @@ img {
 }
 
 .btn {
-  background: linear-gradient(180deg, #d96131 0%, #c1461f 100%);
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
 }
 
 .btn:hover,
@@ -454,9 +505,9 @@ img {
 }
 
 .btn-soft {
-  border: 1px solid rgba(199, 86, 42, 0.18);
-  background: rgba(199, 86, 42, 0.12);
-  color: #f7cba8;
+  border: 1px solid rgba(220, 38, 38, 0.26);
+  background: rgba(220, 38, 38, 0.12);
+  color: #fee2e2;
 }
 
 .btn-whatsapp {
@@ -494,11 +545,36 @@ img {
 
 .catalog-vehicle-card {
   overflow: hidden;
+  border-radius: 28px;
 }
 
 .catalog-vehicle-media {
   aspect-ratio: 4 / 3;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.catalog-vehicle-hitbox,
+.catalog-title-button,
+.detail-thumb,
+.gallery-nav,
+.social-row a {
+  border: 0;
+  background: transparent;
+}
+
+.catalog-vehicle-hitbox,
+.catalog-title-button {
+  padding: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.catalog-title-button h3 {
+  transition: color 0.18s ease;
+}
+
+.catalog-title-button:hover h3 {
+  color: #fff;
 }
 
 .catalog-vehicle-body {
@@ -535,6 +611,186 @@ img {
 .catalog-card-actions {
   display: grid;
   gap: 10px;
+}
+
+.field-range {
+  gap: 10px;
+}
+
+.range-shell {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--field-surface);
+  border: 1px solid var(--field-border);
+}
+
+.range-shell input[type='range'] {
+  width: 100%;
+  accent-color: var(--brand-primary);
+}
+
+.range-shell strong {
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.98rem;
+}
+
+.detail-shell {
+  display: grid;
+  gap: 20px;
+  padding: 22px;
+  border-radius: 32px;
+  background:
+    linear-gradient(120deg, rgba(8, 8, 10, 0.96) 0%, rgba(8, 8, 10, 0.92) 43%, rgba(74, 16, 16, 0.54) 43%, rgba(74, 16, 16, 0.72) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-soft);
+}
+
+.detail-header {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-price-box {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.detail-price-box strong {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.6rem, 5vw, 2.3rem);
+}
+
+.detail-price-box span {
+  color: var(--brand-muted);
+}
+
+.detail-gallery-main {
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.detail-gallery-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.66);
+  color: #fff;
+  transform: translateY(-50%);
+}
+
+.gallery-nav-left {
+  left: 14px;
+}
+
+.gallery-nav-right {
+  right: 14px;
+}
+
+.detail-gallery-thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.detail-thumb {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.74;
+}
+
+.detail-thumb img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.detail-thumb-active {
+  opacity: 1;
+  border-color: rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35);
+}
+
+.detail-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-spec-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-spec-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.detail-spec-card svg {
+  color: #fda4a4;
+}
+
+.detail-spec-card span {
+  color: var(--brand-muted);
+  font-size: 0.86rem;
+}
+
+.detail-spec-card strong {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.detail-editorial-grid,
+.prompt-editorial-grid {
+  grid-template-columns: 1fr;
+}
+
+.social-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.social-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--brand-muted);
+}
+
+.social-row a:hover {
+  color: #fff;
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 .catalog-info-card,
@@ -758,8 +1014,14 @@ img {
     align-items: start;
   }
 
+  .prompt-hero-grid,
+  .detail-header {
+    grid-template-columns: 1fr 0.92fr;
+  }
+
   .catalog-actions,
-  .catalog-card-actions {
+  .catalog-card-actions,
+  .detail-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -767,13 +1029,19 @@ img {
   .admin-summary-strip,
   .catalog-info-grid,
   .editorial-grid,
-  .kpi-grid {
+  .kpi-grid,
+  .prompt-editorial-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .catalog-filter-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .catalog-filter-grid,
+  .prompt-filter-grid {
+    grid-template-columns: 1fr 1.4fr auto;
     align-items: end;
+  }
+
+  .detail-gallery-grid {
+    grid-template-columns: 1.1fr 0.9fr;
   }
 
   .catalog-grid {
@@ -786,6 +1054,14 @@ img {
 
   .catalog-footer-grid {
     grid-template-columns: 1fr 1fr 1.1fr;
+  }
+
+  .detail-spec-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .detail-editorial-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inventory-item {
@@ -815,6 +1091,10 @@ img {
   .catalog-hero-grid {
     grid-template-columns: 0.92fr 1.08fr;
     align-items: center;
+  }
+
+  .prompt-hero-grid {
+    grid-template-columns: 0.84fr 1.16fr;
   }
 
   .featured-vehicle-shell {

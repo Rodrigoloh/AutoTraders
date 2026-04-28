@@ -1,5 +1,4 @@
-import { Gauge, MapPin, MessageCircle, Sparkles } from 'lucide-react';
-import { recordMetric } from '../lib/metrics';
+import { ArrowRight, Gauge, MapPin } from 'lucide-react';
 
 function formatPrice(price, currency = 'MXN') {
   return new Intl.NumberFormat('es-MX', {
@@ -17,48 +16,30 @@ function primaryImage(auto) {
   return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80';
 }
 
-export function AutoCard({ auto, loteId, whatsappNumber }) {
-  const handleWhatsappClick = async () => {
-    await recordMetric({
-      autoId: auto.id,
-      loteId,
-      eventType: 'click_whatsapp',
-    });
-
-    const text = encodeURIComponent(
-      `Hola, me interesa el ${auto.marca} ${auto.modelo} ${auto.anio}.`,
-    );
-    const phone = (whatsappNumber ?? '').replace(/\D/g, '');
-
-    if (phone) {
-      window.open(`https://wa.me/${phone}?text=${text}`, '_blank', 'noopener,noreferrer');
-    }
-  };
-
+export function AutoCard({ auto, onReserve, onSelect }) {
   return (
     <article className="catalog-vehicle-card">
-      <div className="catalog-vehicle-media">
+      <button className="catalog-vehicle-media catalog-vehicle-hitbox" onClick={() => onSelect(auto)} type="button">
         <img
           src={primaryImage(auto)}
           alt={`${auto.marca} ${auto.modelo} ${auto.anio}`}
           loading="lazy"
         />
-      </div>
+      </button>
       <div className="catalog-vehicle-body">
         <div className="inline-row">
-          <span className="status-pill" data-status={auto.estatus}>
-            {auto.estatus}
-          </span>
+          <span className="catalog-card-kicker">{auto.marca}</span>
           <strong className="catalog-card-price">{formatPrice(auto.precio, auto.moneda)}</strong>
         </div>
         <div className="stack-sm">
-          <p className="catalog-card-kicker">
-            {auto.marca} · {auto.anio}
+          <button className="catalog-title-button" onClick={() => onSelect(auto)} type="button">
+            <h3 className="heading-md">
+              {auto.modelo} {auto.anio}
+            </h3>
+          </button>
+          <p className="muted">
+            {auto.version || 'Seminuevo disponible para entrega inmediata.'}
           </p>
-          <h3 className="heading-md">
-            {auto.modelo}
-            {auto.version ? ` ${auto.version}` : ''}
-          </h3>
         </div>
         <div className="catalog-card-specs">
           <span>
@@ -73,14 +54,13 @@ export function AutoCard({ auto, loteId, whatsappNumber }) {
           </span>
         </div>
         <div className="catalog-card-actions">
-          <button className="btn" onClick={handleWhatsappClick} type="button">
-            <MessageCircle size={18} />
-            Preguntar
+          <button className="btn" onClick={() => onReserve(auto)} type="button">
+            Reservar Ahora!
           </button>
-          <a className="btn-outline" href="#contacto">
-            <Sparkles size={18} />
-            Ver mas
-          </a>
+          <button className="btn-outline" onClick={() => onSelect(auto)} type="button">
+            Ver ficha
+            <ArrowRight size={18} />
+          </button>
         </div>
       </div>
     </article>
