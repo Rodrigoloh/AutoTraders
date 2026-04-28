@@ -17,7 +17,7 @@ function money(amount, currency = 'MXN') {
   }).format(Number(amount ?? 0));
 }
 
-export function InventoryList({ autos, onRefresh }) {
+export function InventoryList({ autos, canDelete = false, onRefresh }) {
   const handleMarkSold = async (autoId) => {
     const { error } = await supabase.from('inventario').update({ estatus: 'vendido' }).eq('id', autoId);
 
@@ -80,10 +80,12 @@ export function InventoryList({ autos, onRefresh }) {
                   <CheckCheck size={16} />
                   Marcar como Vendido
                 </button>
-                <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
-                  <Trash2 size={16} />
-                  Eliminar
-                </button>
+                {canDelete ? (
+                  <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
+                    <Trash2 size={16} />
+                    Eliminar
+                  </button>
+                ) : null}
               </div>
             </div>
           </article>

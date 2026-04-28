@@ -1,4 +1,4 @@
-import { MessageCircle, Gauge, MapPin } from 'lucide-react';
+import { Gauge, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { recordMetric } from '../lib/metrics';
 
 function formatPrice(price, currency = 'MXN') {
@@ -36,46 +36,52 @@ export function AutoCard({ auto, loteId, whatsappNumber }) {
   };
 
   return (
-    <article className="vehicle-card">
-      <div className="vehicle-media">
+    <article className="catalog-vehicle-card">
+      <div className="catalog-vehicle-media">
         <img
           src={primaryImage(auto)}
           alt={`${auto.marca} ${auto.modelo} ${auto.anio}`}
           loading="lazy"
         />
       </div>
-      <div className="vehicle-body">
+      <div className="catalog-vehicle-body">
         <div className="inline-row">
           <span className="status-pill" data-status={auto.estatus}>
             {auto.estatus}
           </span>
-          <span className="muted">{auto.anio}</span>
-        </div>
-        <div>
-          <h3 className="heading-md">
-            {auto.marca} {auto.modelo}
-          </h3>
-          <p className="muted">{auto.version || 'Disponible ahora'}</p>
+          <strong className="catalog-card-price">{formatPrice(auto.precio, auto.moneda)}</strong>
         </div>
         <div className="stack-sm">
-          <div className="inline-row muted">
-            <span className="inline-row">
-              <Gauge size={16} />
-              {auto.kilometraje ? `${auto.kilometraje.toLocaleString('es-MX')} km` : 'Kilometraje por confirmar'}
-            </span>
-            <span className="inline-row">
-              <MapPin size={16} />
-              {[auto.ciudad, auto.estado].filter(Boolean).join(', ') || 'México'}
-            </span>
-          </div>
-          <div className="price-row">
-            <span className="price-tag">{formatPrice(auto.precio, auto.moneda)}</span>
-          </div>
+          <p className="catalog-card-kicker">
+            {auto.marca} · {auto.anio}
+          </p>
+          <h3 className="heading-md">
+            {auto.modelo}
+            {auto.version ? ` ${auto.version}` : ''}
+          </h3>
         </div>
-        <button className="btn-whatsapp" onClick={handleWhatsappClick} type="button">
-          <MessageCircle size={18} />
-          Preguntar por WhatsApp
-        </button>
+        <div className="catalog-card-specs">
+          <span>
+            <Gauge size={15} />
+            {auto.kilometraje
+              ? `${auto.kilometraje.toLocaleString('es-MX')} km`
+              : 'Kilometraje por confirmar'}
+          </span>
+          <span>
+            <MapPin size={15} />
+            {[auto.ciudad, auto.estado].filter(Boolean).join(', ') || 'Monterrey'}
+          </span>
+        </div>
+        <div className="catalog-card-actions">
+          <button className="btn" onClick={handleWhatsappClick} type="button">
+            <MessageCircle size={18} />
+            Preguntar
+          </button>
+          <a className="btn-outline" href="#contacto">
+            <Sparkles size={18} />
+            Ver mas
+          </a>
+        </div>
       </div>
     </article>
   );

@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { LockKeyhole, LogIn } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { BrandLogo } from '../components/BrandLogo.jsx';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
 export function AdminLoginPage() {
@@ -41,17 +42,26 @@ export function AdminLoginPage() {
       <Helmet>
         <title>{tenant?.nombre ?? 'Lote'} | Admin</title>
       </Helmet>
-      <main className="app-shell">
+      <main className="app-shell admin-shell">
         <section className="auth-shell">
-          <form className="form-card stack-md" onSubmit={handleLogin}>
+          <form className="form-card stack-md auth-card-premium" onSubmit={handleLogin}>
+            <BrandLogo
+              src={tenant?.config_estetica?.logo_url}
+              alt={`${tenant?.nombre ?? 'Lote'} logo`}
+              brand={tenant?.nombre ?? 'Lote Demo'}
+              submark="Acceso admin"
+              className="admin-brand-image"
+              compact
+            />
             <div className="tenant-badge">
               <LockKeyhole size={18} />
-              Acceso lote admin
+              Acceso protegido del lote
             </div>
             <div className="stack-sm">
-              <h1 className="heading-lg">Administra el inventario desde tu celular.</h1>
+              <h1 className="heading-lg">Entra al dashboard del lote.</h1>
               <p className="muted">
-                Ingresa con la cuenta asignada al lote para cargar autos y revisar KPIs.
+                Usa la cuenta asignada al equipo para publicar unidades, revisar indicadores y
+                editar la demo con el nuevo look premium.
               </p>
             </div>
             <div className="field">

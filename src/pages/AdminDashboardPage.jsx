@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { LayoutDashboard, LogOut, Smartphone, Save, UserPlus, Trash2 } from 'lucide-react';
+import {
+  Eye,
+  LayoutDashboard,
+  LogOut,
+  Palette,
+  Save,
+  Smartphone,
+  Trash2,
+  UserPlus,
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
 import { InventoryList } from '../components/InventoryList';
 import { KpiSummary } from '../components/KpiSummary';
 import { KpiChart } from '../components/KpiChart';
+import { BrandLogo } from '../components/BrandLogo.jsx';
 import { inviteLoteUser, updateLoteMember } from '../lib/loteUsers';
 
 function formatCompact(number) {
@@ -274,47 +284,74 @@ export function AdminDashboardPage() {
       </Helmet>
       <main className="app-shell">
         <div className="container stack-lg">
-          <section className="hero-card">
-            <div className="tenant-topbar">
-              <div className="tenant-badge">
-                <div className="tenant-logo" />
+          <section className="hero-card admin-hero-card">
+            <div className="tenant-topbar admin-topbar">
+              <div className="admin-brand-lockup">
+                <BrandLogo
+                  src={tenant?.config_estetica?.logo_url}
+                  alt={`${tenant?.nombre ?? 'Lote'} logo`}
+                  brand={tenant?.nombre ?? 'Lote Demo'}
+                  submark="Panel del lote"
+                  className="admin-brand-image"
+                  compact
+                />
                 <div className="stack-sm" style={{ gap: 4 }}>
                   <strong>{tenant?.nombre}</strong>
-                  <span className="muted">Lote admin</span>
+                  <span className="muted">Dashboard operativo del lote</span>
                 </div>
               </div>
-              <button className="btn-outline" onClick={handleLogout} type="button">
-                <LogOut size={18} />
-                Salir
-              </button>
+              <div className="admin-topbar-actions">
+                <a className="btn-outline" href={`/${slug}`} target="_blank" rel="noreferrer">
+                  <Eye size={18} />
+                  Ver demo publica
+                </a>
+                <button className="btn-outline" onClick={handleLogout} type="button">
+                  <LogOut size={18} />
+                  Salir
+                </button>
+              </div>
             </div>
-            <div className="hero-grid">
-              <div className="hero-copy">
-                <span className="eyebrow">Panel protegido por Supabase RLS</span>
+            <div className="hero-grid admin-hero-grid">
+              <div className="hero-copy stack-md">
+                <span className="catalog-eyebrow">Panel protegido con Supabase y RLS</span>
                 <h1 className="heading-lg">
-                  Opera anuncios, seguimiento comercial y SEO desde un solo lugar.
+                  Administra inventario, usuarios y contenido sin salir del mismo flujo.
                 </h1>
                 <p className="muted">
-                  Esta base está pensada para lotes que publican desde el piso de ventas y
-                  necesitan respuesta rápida en móvil.
+                  El dashboard mantiene la demo para admins, pero ahora con una jerarquía más
+                  clara para publicar unidades, mover leads y editar el look del lote.
                 </p>
+                <div className="admin-summary-strip">
+                  <article className="admin-summary-card">
+                    <strong>{autos.length}</strong>
+                    <span>unidades registradas</span>
+                  </article>
+                  <article className="admin-summary-card">
+                    <strong>{autos.filter((auto) => auto.estatus === 'disponible').length}</strong>
+                    <span>disponibles</span>
+                  </article>
+                  <article className="admin-summary-card">
+                    <strong>{autos.filter((auto) => auto.estatus === 'vendido').length}</strong>
+                    <span>vendidos</span>
+                  </article>
+                </div>
               </div>
-              <div className="panel-card stack-sm">
+              <div className="panel-card admin-side-panel stack-sm">
                 <span className="tenant-badge">
                   <LayoutDashboard size={18} />
-                  Resumen del lote
+                  Vista general del lote
                 </span>
                 <div className="inline-row">
-                  <strong>{autos.length}</strong>
-                  <span className="muted">autos totales</span>
+                  <strong>{formatCompact(summary.totalViews)}</strong>
+                  <span className="muted">vistas acumuladas</span>
                 </div>
                 <div className="inline-row">
-                  <strong>{autos.filter((auto) => auto.estatus === 'disponible').length}</strong>
-                  <span className="muted">disponibles</span>
+                  <strong>{formatCompact(summary.totalWhatsapp)}</strong>
+                  <span className="muted">leads por WhatsApp</span>
                 </div>
                 <div className="inline-row">
-                  <strong>{autos.filter((auto) => auto.estatus === 'vendido').length}</strong>
-                  <span className="muted">vendidos</span>
+                  <strong>{summary.conversion.toFixed(1)}%</strong>
+                  <span className="muted">conversion reciente</span>
                 </div>
               </div>
             </div>
@@ -346,19 +383,19 @@ export function AdminDashboardPage() {
             <div className="panel-card stack-md">
               <span className="tenant-badge">
                 <Smartphone size={18} />
-                Flujo mobile-first
+                Flujo diario del equipo
               </span>
-              <h2 className="heading-md">Carga autos y publica sin depender de escritorio.</h2>
+              <h2 className="heading-md">Sube unidades, revisa leads y ajusta el demo sin fricción.</h2>
               <p className="muted">
-                El panel está optimizado para operar desde celular, con acciones rápidas y
-                formularios compactos.
+                El panel sigue siendo operativo para admins, pero con una lectura más amable y
+                secciones mejor separadas para móvil y escritorio.
               </p>
               <div className="status-pill">{isLoading ? 'Sincronizando...' : 'Datos al día'}</div>
             </div>
           </section>
 
           <InventoryForm loteId={tenant?.id} onCreated={loadDashboard} />
-          <InventoryList autos={autos} onRefresh={loadDashboard} />
+          <InventoryList autos={autos} canDelete={canManageLote} onRefresh={loadDashboard} />
           {feedback ? <div className="panel-card muted">{feedback}</div> : null}
           {canManageLote ? (
             <section className="dashboard-grid">
@@ -366,7 +403,7 @@ export function AdminDashboardPage() {
                 <div className="inline-row">
                   <div>
                     <h2 className="heading-md">Invitar usuario del lote</h2>
-                    <p className="muted">Invita editores o viewers por correo.</p>
+                    <p className="muted">Da acceso a editores y visualizadores desde aquí.</p>
                   </div>
                   <UserPlus size={20} />
                 </div>
@@ -412,6 +449,7 @@ export function AdminDashboardPage() {
                 <div className="stack-sm">
                   {members.map((member) => (
                     <div className="inventory-item" key={member.id}>
+                      {/** lote_admin members are only manageable by super_admin. */}
                       <div className="inline-row">
                         <strong>
                           {profileMap.get(member.user_id)?.full_name ||
@@ -421,33 +459,41 @@ export function AdminDashboardPage() {
                         <span className="status-pill">{member.role}</span>
                       </div>
                       <div className="inventory-actions">
-                        <select
-                          value={member.role}
-                          onChange={(event) =>
-                            handleMemberAction({
-                              userId: member.user_id,
-                              action: 'change_role',
-                              role: event.target.value,
-                            })
-                          }
-                        >
-                          <option value="lote_admin">Lote Admin</option>
-                          <option value="lote_editor">Lote Editor</option>
-                          <option value="lote_viewer">Lote Viewer</option>
-                        </select>
-                        <button
-                          className="btn-outline"
-                          onClick={() =>
-                            handleMemberAction({
-                              userId: member.user_id,
-                              action: 'remove_access',
-                            })
-                          }
-                          type="button"
-                        >
-                          <Trash2 size={16} />
-                          Quitar acceso
-                        </button>
+                        {member.role === 'lote_admin' && sessionRole !== 'super_admin' ? (
+                          <span className="status-pill">Solo superadmin</span>
+                        ) : (
+                          <>
+                            <select
+                              value={member.role}
+                              onChange={(event) =>
+                                handleMemberAction({
+                                  userId: member.user_id,
+                                  action: 'change_role',
+                                  role: event.target.value,
+                                })
+                              }
+                            >
+                              {sessionRole === 'super_admin' || member.role === 'lote_admin' ? (
+                                <option value="lote_admin">Lote Admin</option>
+                              ) : null}
+                              <option value="lote_editor">Lote Editor</option>
+                              <option value="lote_viewer">Lote Viewer</option>
+                            </select>
+                            <button
+                              className="btn-outline"
+                              onClick={() =>
+                                handleMemberAction({
+                                  userId: member.user_id,
+                                  action: 'remove_access',
+                                })
+                              }
+                              type="button"
+                            >
+                              <Trash2 size={16} />
+                              Quitar acceso
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -457,10 +503,13 @@ export function AdminDashboardPage() {
               <form className="form-card stack-md" onSubmit={saveContent}>
                 <div className="inline-row">
                   <div>
-                    <h2 className="heading-md">Textos y contacto del lote</h2>
-                    <p className="muted">Edita el contenido visible de la demo por cliente.</p>
+                    <h2 className="heading-md">Textos, contacto y look del lote</h2>
+                    <p className="muted">
+                      Aquí ajustas el copy visible en la demo. Los placeholders base viven en
+                      <code> src/lib/demoCatalogContent.js</code>.
+                    </p>
                   </div>
-                  <Save size={20} />
+                  <Palette size={20} />
                 </div>
                 <div className="form-grid">
                   <div className="field">
@@ -501,7 +550,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field" data-span="full">
-                    <label htmlFor="hero_title">Hero title</label>
+                    <label htmlFor="hero_title">Titulo principal del hero</label>
                     <input
                       id="hero_title"
                       name="hero_title"
@@ -510,7 +559,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field" data-span="full">
-                    <label htmlFor="hero_subtitle">Hero subtitle</label>
+                    <label htmlFor="hero_subtitle">Subtitulo del hero</label>
                     <textarea
                       id="hero_subtitle"
                       name="hero_subtitle"
@@ -519,7 +568,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field">
-                    <label htmlFor="intro_title">Intro title</label>
+                    <label htmlFor="intro_title">Titulo de introduccion</label>
                     <input
                       id="intro_title"
                       name="intro_title"
@@ -528,7 +577,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field">
-                    <label htmlFor="about_title">About title</label>
+                    <label htmlFor="about_title">Titulo de seccion informativa</label>
                     <input
                       id="about_title"
                       name="about_title"
@@ -537,7 +586,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field" data-span="full">
-                    <label htmlFor="intro_body">Intro body</label>
+                    <label htmlFor="intro_body">Texto de introduccion</label>
                     <textarea
                       id="intro_body"
                       name="intro_body"
@@ -546,7 +595,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field" data-span="full">
-                    <label htmlFor="about_body">About body</label>
+                    <label htmlFor="about_body">Texto de seccion informativa</label>
                     <textarea
                       id="about_body"
                       name="about_body"
@@ -555,7 +604,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field">
-                    <label htmlFor="contact_title">Contact title</label>
+                    <label htmlFor="contact_title">Titulo de contacto</label>
                     <input
                       id="contact_title"
                       name="contact_title"
@@ -564,7 +613,7 @@ export function AdminDashboardPage() {
                     />
                   </div>
                   <div className="field" data-span="full">
-                    <label htmlFor="contact_body">Contact body</label>
+                    <label htmlFor="contact_body">Texto de contacto</label>
                     <textarea
                       id="contact_body"
                       name="contact_body"

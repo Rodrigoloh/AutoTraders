@@ -4,8 +4,8 @@ export function CatalogGrid({ autos, loteId, whatsappNumber }) {
   if (!autos.length) {
     return (
       <div className="empty-state">
-        No hay autos publicados en este momento. El inventario aparecerá aquí cuando el
-        lote suba sus anuncios.
+        No hay autos publicados con esos filtros. Ajusta la busqueda o carga nuevas
+        unidades desde el panel admin.
       </div>
     );
   }
