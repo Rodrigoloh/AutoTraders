@@ -280,9 +280,9 @@ export function PublicCatalogPage() {
                 }}
               >
                 <div className="hero-stage-overlay">
-                  <span className="catalog-eyebrow">Placeholder 16:9 para portada</span>
+                  <span className="catalog-eyebrow">Portada principal</span>
                   <strong>
-                    Coloca aquí una foto horizontal HD del auto cargada hacia la derecha.
+                    Espacio ideal para una foto 16:9 del auto o unidad destacada del lote.
                   </strong>
                 </div>
               </div>
@@ -372,10 +372,10 @@ export function PublicCatalogPage() {
               </ul>
             </article>
             <article className="editorial-card">
-              <h3 className="heading-md">Demo editable por cliente</h3>
+              <h3 className="heading-md">Atención enfocada en cierre</h3>
               <p className="muted">
-                Los textos base viven en <code>src/lib/demoCatalogContent.js</code> y el copy
-                visible del lote también puede editarse desde el dashboard admin.
+                El sitio prioriza respuestas rápidas, ficha clara del auto y llamadas a la
+                acción visibles para convertir visitas en conversación real.
               </p>
             </article>
           </section>

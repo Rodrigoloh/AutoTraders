@@ -4,8 +4,8 @@ export function CatalogGrid({ autos, onReserve, onSelect }) {
   if (!autos.length) {
     return (
       <div className="empty-state">
-        No hay autos publicados con esos filtros. Ajusta la busqueda o carga nuevas
-        unidades desde el panel admin.
+        No hay autos publicados con esos filtros. Ajusta la busqueda o vuelve pronto
+        para ver nuevas unidades disponibles.
       </div>
     );
   }
