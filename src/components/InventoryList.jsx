@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CarFront,
   Trash2,
@@ -40,6 +40,10 @@ function buildDraft(auto) {
     kilometraje: auto.kilometraje ?? '',
     combustible: auto.combustible ?? '',
     transmision: auto.transmision ?? '',
+    bodyShape: auto.meta_tags?.body_shape ?? '',
+    motor: auto.meta_tags?.motor ?? '',
+    traccion: auto.meta_tags?.traccion ?? '',
+    asientos: auto.meta_tags?.asientos ?? '',
     ciudad: auto.ciudad ?? '',
     estado: auto.estado ?? '',
     descripcion: auto.descripcion ?? '',
@@ -61,6 +65,19 @@ export function InventoryList({
   const [savingId, setSavingId] = useState('');
   const [pendingFiles, setPendingFiles] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
+  const [modelQuery, setModelQuery] = useState('');
+
+  const filteredAutos = useMemo(() => {
+    const query = modelQuery.trim().toLowerCase();
+
+    if (!query) {
+      return autos;
+    }
+
+    return autos.filter((auto) =>
+      String(auto.modelo ?? '').toLowerCase().includes(query),
+    );
+  }, [autos, modelQuery]);
 
   const handleMarkSold = async (autoId) => {
     setStatusMessage('');
@@ -168,6 +185,12 @@ export function InventoryList({
       kilometraje: draft.kilometraje ? Number(draft.kilometraje) : null,
       combustible: draft.combustible || null,
       transmision: draft.transmision || null,
+      meta_tags: {
+        body_shape: draft.bodyShape || null,
+        motor: draft.motor || null,
+        traccion: draft.traccion || null,
+        asientos: draft.asientos || null,
+      },
       ciudad: draft.ciudad || null,
       estado: draft.estado || null,
       descripcion: draft.descripcion || null,
@@ -204,9 +227,24 @@ export function InventoryList({
         <h2 className="heading-md">Inventario actual</h2>
         <p className="muted">Acciones rápidas para lotes que operan desde celular.</p>
       </div>
+      <div className="field">
+        <label htmlFor="inventory-model-search">Buscar por modelo</label>
+        <input
+          id="inventory-model-search"
+          onChange={(event) => setModelQuery(event.target.value)}
+          placeholder="Ej. X5, A45, Urus"
+          type="text"
+          value={modelQuery}
+        />
+      </div>
       {statusMessage ? <div className="muted">{statusMessage}</div> : null}
+      {!filteredAutos.length ? (
+        <div className="panel-card muted">
+          No encontramos autos con ese modelo.
+        </div>
+      ) : null}
       <div className="inventory-grid">
-        {autos.map((auto) => (
+        {filteredAutos.map((auto) => (
           <article className="inventory-item" key={auto.id}>
             <div className="inventory-thumb">
               <img src={getImage(auto)} alt={`${auto.marca} ${auto.modelo}`} />
@@ -292,6 +330,22 @@ export function InventoryList({
                     <div className="field">
                       <label htmlFor={`transmision-${auto.id}`}>Transmisión</label>
                       <input id={`transmision-${auto.id}`} name="transmision" onChange={handleDraftChange} value={draft.transmision} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`bodyShape-${auto.id}`}>Carrocería</label>
+                      <input id={`bodyShape-${auto.id}`} name="bodyShape" onChange={handleDraftChange} value={draft.bodyShape} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`motor-${auto.id}`}>Motor</label>
+                      <input id={`motor-${auto.id}`} name="motor" onChange={handleDraftChange} value={draft.motor} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`traccion-${auto.id}`}>Tracción</label>
+                      <input id={`traccion-${auto.id}`} name="traccion" onChange={handleDraftChange} value={draft.traccion} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`asientos-${auto.id}`}>Asientos</label>
+                      <input id={`asientos-${auto.id}`} name="asientos" onChange={handleDraftChange} value={draft.asientos} />
                     </div>
                     <div className="field">
                       <label htmlFor={`ciudad-${auto.id}`}>Ciudad</label>

@@ -864,6 +864,8 @@ img {
 .inventory-item {
   display: grid;
   gap: 12px;
+  align-content: start;
+  padding: 14px;
 }
 
 .inventory-image-grid {
@@ -896,7 +898,7 @@ img {
 
 .inventory-thumb img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
 }
 
@@ -952,6 +954,10 @@ img {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .field[data-span='full'] {
     grid-column: 1 / -1;
   }
@@ -983,7 +989,10 @@ img {
     border-left: 1px solid rgba(255, 255, 255, 0.14);
   }
 
-  .inventory-grid,
+  .inventory-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1004,6 +1013,12 @@ img {
 @media (min-width: 1200px) {
   .inventory-filter-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1360px) {
+  .inventory-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

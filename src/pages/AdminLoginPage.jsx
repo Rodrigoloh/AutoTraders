@@ -4,6 +4,7 @@ import { LockKeyhole, LogIn } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { BrandLogo } from '../components/BrandLogo.jsx';
+import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
 export function AdminLoginPage() {
@@ -46,9 +47,9 @@ export function AdminLoginPage() {
         <section className="auth-shell">
           <form className="form-card stack-md auth-card-premium" onSubmit={handleLogin}>
             <BrandLogo
-              src={tenant?.config_estetica?.logo_url}
+              src={demoCatalogContent.logos.header}
               alt={`${tenant?.nombre ?? 'Lote'} logo`}
-              brand={tenant?.nombre ?? 'Lote Demo'}
+              brand={tenant?.nombre ?? demoCatalogContent.brand.wordmark}
               submark="Acceso admin"
               className="admin-brand-image"
               compact
@@ -60,8 +61,8 @@ export function AdminLoginPage() {
             <div className="stack-sm">
               <h1 className="heading-lg">Entra al dashboard del lote.</h1>
               <p className="muted">
-                Usa la cuenta asignada al equipo para publicar unidades, revisar indicadores y
-                editar la demo con el nuevo look premium.
+                Usa la cuenta asignada al equipo para publicar autos, actualizar fichas y ordenar
+                las imágenes visibles en la experiencia pública.
               </p>
             </div>
             <div className="field">

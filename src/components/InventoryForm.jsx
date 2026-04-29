@@ -12,6 +12,10 @@ const initialForm = {
   kilometraje: '',
   combustible: '',
   transmision: '',
+  bodyShape: '',
+  motor: '',
+  traccion: '',
+  asientos: '',
   ciudad: '',
   estado: '',
   descripcion: '',
@@ -57,6 +61,12 @@ export function InventoryForm({ loteId, onCreated }) {
         kilometraje: form.kilometraje ? Number(form.kilometraje) : null,
         combustible: form.combustible || null,
         transmision: form.transmision || null,
+        meta_tags: {
+          body_shape: form.bodyShape || null,
+          motor: form.motor || null,
+          traccion: form.traccion || null,
+          asientos: form.asientos || null,
+        },
         ciudad: form.ciudad || null,
         estado: form.estado || null,
         descripcion: form.descripcion || null,
@@ -150,6 +160,37 @@ export function InventoryForm({ loteId, onCreated }) {
             name="transmision"
             onChange={handleChange}
             value={form.transmision}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="bodyShape">Carrocería</label>
+          <input
+            id="bodyShape"
+            name="bodyShape"
+            onChange={handleChange}
+            value={form.bodyShape}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="motor">Motor</label>
+          <input id="motor" name="motor" onChange={handleChange} value={form.motor} />
+        </div>
+        <div className="field">
+          <label htmlFor="traccion">Tracción</label>
+          <input
+            id="traccion"
+            name="traccion"
+            onChange={handleChange}
+            value={form.traccion}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="asientos">Asientos</label>
+          <input
+            id="asientos"
+            name="asientos"
+            onChange={handleChange}
+            value={form.asientos}
           />
         </div>
         <div className="field">
