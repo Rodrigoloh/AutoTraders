@@ -9,6 +9,16 @@ const PublicCatalogPage = lazy(() =>
     default: module.PublicCatalogPage,
   })),
 );
+const InventoryPage = lazy(() =>
+  import('./pages/InventoryPage').then((module) => ({
+    default: module.InventoryPage,
+  })),
+);
+const SellYourCarPage = lazy(() =>
+  import('./pages/SellYourCarPage').then((module) => ({
+    default: module.SellYourCarPage,
+  })),
+);
 const AdminDashboardPage = lazy(() =>
   import('./pages/AdminDashboardPage').then((module) => ({
     default: module.AdminDashboardPage,
@@ -53,6 +63,8 @@ export default function App() {
         />
         <Route path="/:slug" element={<TenantLayout />}>
           <Route index element={<PublicCatalogPage />} />
+          <Route path="inventario" element={<InventoryPage />} />
+          <Route path="vende-tu-auto" element={<SellYourCarPage />} />
           <Route path="admin/login" element={<AdminLoginPage />} />
           <Route
             path="admin"

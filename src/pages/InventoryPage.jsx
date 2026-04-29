@@ -1,0 +1,259 @@
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet';
+import { useSearchParams } from 'react-router-dom';
+import { CatalogGrid } from '../components/CatalogGrid';
+import { CarDetail } from '../components/CarDetail.jsx';
+import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
+import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
+import { demoCatalogContent } from '../lib/demoCatalogContent.js';
+import {
+  buildBudgetOptions,
+  inferVehicleType,
+  primaryImage,
+  usePublicInventory,
+} from '../lib/publicCatalogUtils.js';
+import { recordMetric } from '../lib/metrics';
+import { useTenantTheme } from '../styles/themeContext.jsx';
+
+export function InventoryPage() {
+  const { tenant, theme, isLoading, slug } = useTenantTheme();
+  const [searchParams] = useSearchParams();
+  const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id);
+  const [selectedAutoId, setSelectedAutoId] = useState(null);
+  const [filters, setFilters] = useState({
+    vehicleType: 'all',
+    minPrice: '0',
+    maxPrice: 'all',
+    brandQuery: '',
+    modelQuery: '',
+  });
+  const deferredFilters = useDeferredValue(filters);
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      maxPrice: current.maxPrice === 'all' ? String(maxBudget) : current.maxPrice,
+    }));
+  }, [maxBudget]);
+
+  const budgetOptions = useMemo(() => buildBudgetOptions(maxBudget), [maxBudget]);
+
+  const filteredAutos = useMemo(() => {
+    return autos.filter((auto) => {
+      const brand = String(auto.marca ?? '').toLowerCase();
+      const model = String(auto.modelo ?? '').toLowerCase();
+      const matchesType =
+        deferredFilters.vehicleType === 'all' ||
+        inferVehicleType(auto) === deferredFilters.vehicleType;
+      const matchesBrand =
+        !deferredFilters.brandQuery ||
+        brand.includes(deferredFilters.brandQuery.trim().toLowerCase());
+      const matchesModel =
+        !deferredFilters.modelQuery ||
+        model.includes(deferredFilters.modelQuery.trim().toLowerCase());
+      const matchesMinPrice = Number(auto.precio ?? 0) >= Number(deferredFilters.minPrice || 0);
+      const matchesMaxPrice =
+        deferredFilters.maxPrice === 'all' ||
+        Number(auto.precio ?? 0) <= Number(deferredFilters.maxPrice);
+
+      return matchesType && matchesBrand && matchesModel && matchesMinPrice && matchesMaxPrice;
+    });
+  }, [autos, deferredFilters]);
+
+  useEffect(() => {
+    const requestedAutoId = searchParams.get('auto');
+
+    if (requestedAutoId && filteredAutos.some((auto) => auto.id === requestedAutoId)) {
+      setSelectedAutoId(requestedAutoId);
+      return;
+    }
+
+    if (!selectedAutoId && filteredAutos[0]?.id) {
+      setSelectedAutoId(filteredAutos[0].id);
+      return;
+    }
+
+    if (selectedAutoId && !filteredAutos.some((auto) => auto.id === selectedAutoId)) {
+      setSelectedAutoId(filteredAutos[0]?.id ?? autos[0]?.id ?? null);
+    }
+  }, [selectedAutoId, filteredAutos, autos, searchParams]);
+
+  const selectedAuto =
+    filteredAutos.find((auto) => auto.id === selectedAutoId) ??
+    autos.find((auto) => auto.id === selectedAutoId) ??
+    filteredAutos[0] ??
+    autos[0] ??
+    null;
+
+  const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
+  const brandSubmark = demoCatalogContent.brand.submark;
+  const logoSrc = theme.logoUrl || demoCatalogContent.logos.header;
+  const footerLogo = theme.logoUrl || demoCatalogContent.logos.footer;
+  const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
+  const whatsappNumber = (tenant?.whatsapp ?? '').replace(/\D/g, '');
+  const heroImage = primaryImage(filteredAutos[0]);
+
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target;
+    setFilters((current) => ({
+      ...current,
+      [name]:
+        name === 'maxPrice'
+          ? value || 'all'
+          : name === 'minPrice'
+            ? value || '0'
+            : value,
+    }));
+  };
+
+  const openWhatsappIntent = async (auto, intent) => {
+    await recordMetric({
+      autoId: auto.id,
+      loteId: tenant?.id,
+      eventType: 'click_whatsapp',
+    });
+
+    const messages = {
+      reserva: `Hola ${brandName}, quiero reservar el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
+      prueba: `Hola ${brandName}, quiero agendar una prueba para el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
+      contacto: `Hola ${brandName}, quiero más información sobre el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
+    };
+
+    if (whatsappNumber) {
+      const text = encodeURIComponent(messages[intent] ?? messages.contacto);
+      window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  if (isLoading || loadingAutos) {
+    return (
+      <main className="app-shell">
+        <div className="loading-state">Cargando inventario del lote...</div>
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <Helmet>
+        <title>{brandName} | Busca un auto</title>
+      </Helmet>
+
+      <main className="site-shell">
+        <section
+          className="secondary-hero"
+          style={{
+            backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.7) 100%), url("${heroImage}")`,
+          }}
+        >
+          <PublicSiteHeader
+            brandName={brandName}
+            brandSubmark={brandSubmark}
+            homeHref={`/${slug}`}
+            inventoryHref={`/${slug}/inventario`}
+            logoSrc={logoSrc}
+            mode="secondary"
+            sellHref={`/${slug}/vende-tu-auto`}
+          />
+        </section>
+
+        <section className="quick-filter-strip secondary-search-strip">
+          <div className="section-head edge-pad">
+            <h2>{demoCatalogContent.inventory.title}</h2>
+            <p>{demoCatalogContent.inventory.subtitle}</p>
+          </div>
+
+          <div className="advanced-filter-shell edge-pad">
+            <div className="inventory-filter-grid">
+              <label className="filter-field">
+                <span>Tipo</span>
+                <select
+                  name="vehicleType"
+                  onChange={handleFilterChange}
+                  value={filters.vehicleType}
+                >
+                  <option value="all">Todos</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Sedán">Sedán</option>
+                  <option value="Deportivo">Deportivo</option>
+                </select>
+              </label>
+              <label className="filter-field">
+                <span>{demoCatalogContent.inventory.brandLabel}</span>
+                <input
+                  name="brandQuery"
+                  onChange={handleFilterChange}
+                  placeholder="Ej. BMW, Audi, Mercedes"
+                  type="text"
+                  value={filters.brandQuery}
+                />
+              </label>
+              <label className="filter-field">
+                <span>{demoCatalogContent.inventory.modelLabel}</span>
+                <input
+                  name="modelQuery"
+                  onChange={handleFilterChange}
+                  placeholder="Ej. X5, A45, GLB"
+                  type="text"
+                  value={filters.modelQuery}
+                />
+              </label>
+              <label className="filter-field">
+                <span>{demoCatalogContent.inventory.basePriceLabel}</span>
+                <select name="minPrice" onChange={handleFilterChange} value={filters.minPrice}>
+                  {budgetOptions.map((option) => (
+                    <option key={`inv-min-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="filter-field">
+                <span>{demoCatalogContent.inventory.topPriceLabel}</span>
+                <select name="maxPrice" onChange={handleFilterChange} value={filters.maxPrice}>
+                  <option value="all">Sin tope</option>
+                  {budgetOptions
+                    .filter((option) => option.value !== '0')
+                    .map((option) => (
+                      <option key={`inv-max-${option.value}`} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section className="inventory-section">
+          <CatalogGrid
+            autos={filteredAutos}
+            emptyMessage="No encontramos unidades con esa combinación de búsqueda."
+            onSelect={(auto) => setSelectedAutoId(auto.id)}
+            variant="inventory"
+          />
+        </section>
+
+        {selectedAuto ? (
+          <CarDetail
+            auto={selectedAuto}
+            onContact={(auto) => openWhatsappIntent(auto, 'contacto')}
+            onReserve={(auto) => openWhatsappIntent(auto, 'reserva')}
+            onTestDrive={(auto) => openWhatsappIntent(auto, 'prueba')}
+          />
+        ) : null}
+
+        <PublicSiteFooter
+          address={demoCatalogContent.footer.address}
+          blurb={demoCatalogContent.footer.blurb}
+          brandName={brandName}
+          brandSubmark={brandSubmark}
+          footerLogo={footerLogo}
+          hours={demoCatalogContent.footer.hours}
+          legal={demoCatalogContent.footer.legal}
+          phone={phone}
+        />
+      </main>
+    </>
+  );
+}

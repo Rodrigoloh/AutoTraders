@@ -95,6 +95,12 @@ img {
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
+.immersive-header-secondary {
+  position: relative;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.18) 100%);
+}
+
 .site-logo,
 .footer-logo {
   display: block;
@@ -269,6 +275,10 @@ img {
 .kpi-grid {
   display: grid;
   gap: 12px;
+}
+
+.quick-filter-grid-home {
+  grid-template-columns: 1fr;
 }
 
 .filter-field,
@@ -462,7 +472,7 @@ img {
 .editorial-cell h3 {
   margin: 0;
   font-family: 'Oswald', sans-serif;
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-size: clamp(1.05rem, 3vw, 1.35rem);
   line-height: 1.04;
   text-transform: uppercase;
 }
@@ -611,6 +621,21 @@ img {
   min-height: 42vh;
   padding: 48px 18px;
   background: #030303;
+}
+
+.sell-page-shell {
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  padding: 0 18px;
+  background: #000;
+}
+
+.secondary-hero {
+  min-height: 34vh;
+  background-color: #050505;
+  background-position: center;
+  background-size: cover;
 }
 
 .sell-message {
@@ -831,6 +856,10 @@ img {
     align-items: end;
   }
 
+  .quick-filter-grid-home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .vehicle-grid-featured {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-flow: row;
@@ -907,11 +936,7 @@ img {
 
 @media (min-width: 1200px) {
   .inventory-filter-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .vehicle-grid-inventory {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
