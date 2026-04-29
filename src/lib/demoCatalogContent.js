@@ -21,9 +21,9 @@ export const demoCatalogContent = {
   ],
   hero: {
     eyebrow: 'Monterrey, Nuevo León',
-    title: 'Autos serios. Presencia fuerte. Cierre rápido.',
+    title: 'EL SEMINUEVO QUE BUSCAS',
     subtitle:
-      'Inventario premium para compradores que quieren ver, decidir y contactar desde el celular sin navegar una interfaz cargada.',
+      'VEN Y COMPRA TU AUTO CON NOSOTROS',
     primaryCta: 'Busca un auto',
     secondaryCta: 'Vende tu auto',
   },
@@ -41,27 +41,27 @@ export const demoCatalogContent = {
   bodyBlocks: [
     {
       kicker: 'Compra',
-      title: 'Inventario claro y sin ruido',
+      title: 'Encuenta el mejor auto para ti',
       body:
-        'Cada unidad se presenta con foto dominante, datos clave y un solo siguiente paso: ver el vehículo.',
+        'Tenemos el mejor inventario de seminuevos en muchas marcas y modelos, al mejor precio. ',
     },
     {
       kicker: 'Consignación',
-      title: 'Operación enfocada en Monterrey',
+      title: 'Tomamos tu auto a cuenta, para que te lleves uno nuevo',
       body:
-        'Copy y estructura pensados para lote premium en MTY, San Pedro y zona metropolitana.',
+        'Dejanos tu auto usado a consignacion, y lo tomamos para que puedas salir manejando con un seminuevo.',
     },
     {
       kicker: 'Conversión',
-      title: 'Más intención, menos fricción',
+      title: 'Te Ofrecemos credito con la mejor taza de interés ',
       body:
-        'Los botones y filtros priorizan acción inmediata: reserva, prueba y contacto directo.',
+        'Credito a plazos comodos que se ajustan a todos los presupuestos.',
     },
     {
       kicker: 'Marca',
-      title: 'Base editable para cada cliente',
+      title: 'Por que comprar tu auto en Autos del norte?',
       body:
-        'Reemplaza textos, logos y dirección sin rehacer el layout. El demo está listo para personalizarse.',
+        'Contamos con amplia experiencia y el mejor equipo para poder atenderte como te mereces. ',
     },
   ],
   inventory: {
