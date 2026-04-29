@@ -52,6 +52,9 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
   }, [auto?.id]);
 
   const activeImage = images[currentIndex] ?? images[0];
+  const previousImage =
+    images[(currentIndex - 1 + images.length) % images.length] ?? activeImage;
+  const nextImage = images[(currentIndex + 1) % images.length] ?? activeImage;
   const specs = [
     { icon: CalendarDays, label: 'Año', value: auto?.anio ?? 'N/D' },
     { icon: Gauge, label: 'KM', value: formatMileage(auto?.kilometraje) },
@@ -92,7 +95,15 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
       <div className="detail-hero-grid edge-pad">
         <div className="detail-carousel">
           <div className="detail-stage">
-            <img alt={`${auto?.marca} ${auto?.modelo}`} src={activeImage} />
+            <div className="detail-stage-preview detail-stage-preview-left" aria-hidden="true">
+              <img alt="" src={previousImage} />
+            </div>
+            <div className="detail-stage-preview detail-stage-preview-right" aria-hidden="true">
+              <img alt="" src={nextImage} />
+            </div>
+            <div className="detail-stage-main">
+              <img alt={`${auto?.marca} ${auto?.modelo}`} src={activeImage} />
+            </div>
             <button
               aria-label="Imagen anterior"
               className="carousel-nav carousel-nav-left"
@@ -126,14 +137,6 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
         </div>
 
         <div className="detail-summary">
-          <div className="detail-summary-copy">
-            <h3>{auto?.marca} {auto?.modelo} {auto?.anio}</h3>
-            <p>
-              {auto?.descripcion ||
-                'Unidad lista para entrega, consignación directa y atención inmediata en Monterrey.'}
-            </p>
-          </div>
-
           <div className="detail-action-row">
             <button className="edge-button" onClick={() => onReserve(auto)} type="button">
               Reserva ahora
@@ -159,22 +162,10 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
       </div>
 
       <div className="detail-description edge-pad">
-        <div className="detail-description-grid">
-          <div>
-            <p className="detail-description-copy">
-              {auto?.descripcion ||
-                'Bloque de texto preparado para una descripción más extensa del vehículo: procedencia, equipamiento, historial, detalles de manejo y puntos de valor para compradores en Monterrey.'}
-            </p>
-          </div>
-          <div>
-            <span className="section-kicker">Mensajes de venta</span>
-            <ul className="detail-selling-list">
-              <li>Consignación directa.</li>
-              <li>Crédito inmediato con solo INE.</li>
-              <li>Agenda visita o video por WhatsApp.</li>
-            </ul>
-          </div>
-        </div>
+        <p className="detail-description-copy">
+          {auto?.descripcion ||
+            'Bloque de texto preparado para una descripción más extensa del vehículo: procedencia, equipamiento, historial, detalles de manejo y puntos de valor para compradores en Monterrey.'}
+        </p>
         <button className="edge-button edge-button-ghost detail-back-button" onClick={onBack} type="button">
           Volver
         </button>

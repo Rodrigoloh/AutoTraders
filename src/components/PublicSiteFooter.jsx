@@ -68,6 +68,14 @@ export function PublicSiteFooter({
 
       <div className="copyright-strip">
         <span>{legal}</span>
+        <a
+          className="cobalto-link"
+          href="https://www.cobalto.blue"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Powered by cobalto.blue
+        </a>
       </div>
     </>
   );
