@@ -37,15 +37,13 @@ begin
     if row(
       new.lote_id,
       new.moneda,
-      new.estatus,
       new.created_by
     ) is distinct from row(
       old.lote_id,
       old.moneda,
-      old.estatus,
       old.created_by
     ) then
-      raise exception 'lote_admin can update vehicle card text, images and detail specs, but not ownership or status fields';
+      raise exception 'lote_admin can update vehicle card text, images, detail specs and status, but not ownership fields';
     end if;
   end if;
 

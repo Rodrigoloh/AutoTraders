@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Eye, LayoutDashboard, LogOut, Plus, Smartphone } from 'lucide-react';
+import { Eye, LogOut, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
@@ -23,34 +23,26 @@ function getLast7DaysRange() {
   return date.toISOString().slice(0, 10);
 }
 
-function normalizeMetrics(metrics) {
-  const byDate = new Map();
+function buildInventoryAging(autos) {
+  const activeAutos = autos.filter((auto) => auto.estatus !== 'vendido');
+  const now = Date.now();
 
-  for (let index = 6; index >= 0; index -= 1) {
-    const date = new Date();
-    date.setDate(date.getDate() - index);
-    const isoDate = date.toISOString().slice(0, 10);
+  const countOlderThan = (days) =>
+    activeAutos.filter((auto) => {
+      if (!auto.created_at) {
+        return false;
+      }
 
-    byDate.set(isoDate, {
-      date: isoDate,
-      label: date.toLocaleDateString('es-MX', { weekday: 'short' }),
-      visitas: 0,
-      whatsapp: 0,
-    });
-  }
+      const ageInDays = (now - new Date(auto.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      return ageInDays >= days;
+    }).length;
 
-  metrics.forEach((row) => {
-    const bucket = byDate.get(row.fecha);
-
-    if (!bucket) {
-      return;
-    }
-
-    bucket.visitas += Number(row.vistas_totales ?? 0);
-    bucket.whatsapp += Number(row.interesados_whatsapp ?? 0);
-  });
-
-  return Array.from(byDate.values());
+  return [
+    { label: '1 semana', autos: countOlderThan(7) },
+    { label: '2 semanas', autos: countOlderThan(14) },
+    { label: '4 semanas', autos: countOlderThan(28) },
+    { label: '8 semanas', autos: countOlderThan(56) },
+  ];
 }
 
 export function AdminDashboardPage() {
@@ -78,7 +70,7 @@ export function AdminDashboardPage() {
         supabase
           .from('inventario')
           .select(
-            'id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes, meta_tags',
+            'id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes, meta_tags, created_at',
           )
           .eq('lote_id', tenant.id)
           .order('created_at', { ascending: false }),
@@ -120,9 +112,9 @@ export function AdminDashboardPage() {
       totalViews,
       totalWhatsapp,
       conversion,
-      chart: normalizeMetrics(metrics),
+      inventoryAging: buildInventoryAging(autos),
     };
-  }, [metrics]);
+  }, [autos, metrics]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -173,81 +165,59 @@ export function AdminDashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="hero-grid admin-hero-grid">
-              <div className="hero-copy stack-md">
-                <span className="catalog-eyebrow">Panel protegido con Supabase y RLS</span>
-                <h1 className="heading-lg">
-                  Controla el inventario, las fotos y las fichas del lote desde un mismo panel.
-                </h1>
-                <p className="muted">
-                  Aquí el equipo solo opera autos: publica nuevas unidades, ajusta textos de
-                  tarjetas, actualiza specs y ordena las imágenes que ve el cliente.
-                </p>
-                <div className="admin-summary-strip">
-                  <article className="admin-summary-card">
-                    <strong>{autos.length}</strong>
-                    <span>unidades registradas</span>
-                  </article>
-                  <article className="admin-summary-card">
-                    <strong>{publishedAutos}</strong>
-                    <span>visibles al público</span>
-                  </article>
-                  <article className="admin-summary-card">
-                    <strong>{soldAutos}</strong>
-                    <span>vendidos</span>
-                  </article>
-                </div>
-              </div>
-              <div className="panel-card admin-side-panel stack-sm">
-                <span className="tenant-badge">
-                  <LayoutDashboard size={18} />
-                  Vista general del lote
-                </span>
-                <div className="inline-row">
-                  <strong>{formatCompact(summary.totalViews)}</strong>
-                  <span className="muted">vistas acumuladas</span>
-                </div>
-                <div className="inline-row">
-                  <strong>{formatCompact(summary.totalWhatsapp)}</strong>
-                  <span className="muted">leads por WhatsApp</span>
-                </div>
-                <div className="inline-row">
-                  <strong>{summary.conversion.toFixed(1)}%</strong>
-                  <span className="muted">conversión reciente</span>
-                </div>
-              </div>
+            <div className="hero-copy stack-md">
+              <span className="catalog-eyebrow">Panel protegido con Supabase y RLS</span>
+              <h1 className="heading-lg">Dashboard de rendimiento de inventario y leads</h1>
+              <p className="muted">
+                Revisa el rendimiento del inventario, el interés comercial y la permanencia de
+                cada unidad para rotar mejor el lote.
+              </p>
             </div>
           </section>
 
-          <section className="kpi-grid">
+          <section className="kpi-grid admin-kpi-grid">
             <KpiSummary
-              helpText="Suma de visitas de detalle en la última semana."
-              title="Vistas Totales"
+              helpText="Todas las unidades dadas de alta en el lote."
+              title="Inventario Total"
+              type="inventory"
+              value={formatCompact(autos.length)}
+            />
+            <KpiSummary
+              helpText="Autos visibles hoy para cualquier visitante del sitio."
+              title="Publicados"
+              type="inventory"
+              value={formatCompact(publishedAutos)}
+            />
+            <KpiSummary
+              helpText="Visitas acumuladas a fichas durante la última semana."
+              title="Vistas"
               type="views"
               value={formatCompact(summary.totalViews)}
             />
             <KpiSummary
               helpText="Clicks de intención comercial por WhatsApp."
-              title="Interesados (WhatsApp)"
+              title="Leads WhatsApp"
               type="whatsapp"
               value={formatCompact(summary.totalWhatsapp)}
             />
             <KpiSummary
-              helpText="Interesados / vistas de detalle."
-              title="Tasa de Conversión"
+              helpText="Relación entre leads y vistas de detalle."
+              title="Conversión"
               type="conversion"
               value={`${summary.conversion.toFixed(1)}%`}
             />
+            <KpiSummary
+              helpText="Unidades marcadas como vendidas en este lote."
+              title="Vendidos"
+              type="inventory"
+              value={formatCompact(soldAutos)}
+            />
           </section>
 
-          <section className="dashboard-grid">
-            <KpiChart data={summary.chart} />
-            <div className="panel-card stack-md">
-              <span className="tenant-badge">
-                <Smartphone size={18} />
-                Flujo diario del equipo
-              </span>
-              <h2 className="heading-md">Todo el trabajo del lote pasa por inventario.</h2>
+          <section className="dashboard-grid admin-insight-grid">
+            <KpiChart data={summary.inventoryAging} />
+            <div className="panel-card stack-md admin-code-card">
+              <h2 className="heading-md">Edición del sitio fuera del dashboard</h2>
               <p className="muted">
                 La gestión de usuarios queda fuera de este panel. Los textos del sitio y logos
                 públicos se editan directamente en código.

@@ -10,9 +10,20 @@ import {
   ImagePlus,
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { uploadInventoryImages } from '../lib/inventoryImages.js';
+
+const statusOptions = ['disponible', 'apartado', 'vendido'];
+
+function formatStatusLabel(status) {
+  if (!status) {
+    return 'Disponible';
+  }
+
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function getImage(auto) {
   if (Array.isArray(auto.imagenes) && auto.imagenes[0]) {
@@ -66,6 +77,8 @@ export function InventoryList({
   const [pendingFiles, setPendingFiles] = useState([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [modelQuery, setModelQuery] = useState('');
+  const [statusMenuId, setStatusMenuId] = useState(null);
+  const [statusSavingId, setStatusSavingId] = useState('');
 
   const filteredAutos = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -79,16 +92,23 @@ export function InventoryList({
     );
   }, [autos, modelQuery]);
 
-  const handleMarkSold = async (autoId) => {
+  const handleStatusChange = async (autoId, nextStatus) => {
     setStatusMessage('');
-    const { error } = await supabase.from('inventario').update({ estatus: 'vendido' }).eq('id', autoId);
+    setStatusSavingId(autoId);
+    const { error } = await supabase
+      .from('inventario')
+      .update({ estatus: nextStatus })
+      .eq('id', autoId);
+
+    setStatusSavingId('');
 
     if (!error) {
+      setStatusMenuId(null);
       onRefresh?.();
       return;
     }
 
-    setStatusMessage(error.message ?? 'No se pudo marcar el auto como vendido.');
+    setStatusMessage(error.message ?? 'No se pudo actualizar el estatus del auto.');
   };
 
   const handleDelete = async (autoId) => {
@@ -277,10 +297,19 @@ export function InventoryList({
                     Editar specs
                   </button>
                 ) : null}
-                {canMarkSold ? (
-                  <button className="btn-soft" onClick={() => handleMarkSold(auto.id)} type="button">
+                {canEdit ? (
+                  <button
+                    className="btn-soft"
+                    onClick={() =>
+                      setStatusMenuId((current) => (current === auto.id ? null : auto.id))
+                    }
+                    type="button"
+                  >
                     <CheckCheck size={16} />
-                    Marcar como Vendido
+                    {statusSavingId === auto.id
+                      ? 'Guardando...'
+                      : `Status: ${formatStatusLabel(auto.estatus)}`}
+                    <ChevronDown size={16} />
                   </button>
                 ) : null}
                 {canDelete ? (
@@ -290,6 +319,21 @@ export function InventoryList({
                   </button>
                 ) : null}
               </div>
+              {canEdit && statusMenuId === auto.id ? (
+                <div className="inventory-actions">
+                  {statusOptions.map((status) => (
+                    <button
+                      className={status === auto.estatus ? 'btn' : 'btn-outline'}
+                      disabled={statusSavingId === auto.id}
+                      key={`${auto.id}-${status}`}
+                      onClick={() => handleStatusChange(auto.id, status)}
+                      type="button"
+                    >
+                      {formatStatusLabel(status)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               {canEdit && editingId === auto.id && draft ? (
                 <div className="panel-card stack-md">
                   <div>

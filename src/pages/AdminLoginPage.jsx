@@ -56,10 +56,10 @@ export function AdminLoginPage() {
             />
             <div className="tenant-badge">
               <LockKeyhole size={18} />
-              Acceso protegido del lote
+              Acceso protegido
             </div>
             <div className="stack-sm">
-              <h1 className="heading-lg">Entra al dashboard del lote.</h1>
+              <h1 className="heading-lg">Entra de rendimiento operativo</h1>
               <p className="muted">
                 Usa la cuenta asignada al equipo para publicar autos, actualizar fichas y ordenar
                 las imágenes visibles en la experiencia pública.
