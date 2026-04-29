@@ -23,6 +23,9 @@ export function PublicCatalogPage() {
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;
   const heroImage = primaryImage(featuredAutos[0]);
   const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
+  const handleFeaturedSelect = () => {
+    navigate(primaryCtaHref);
+  };
 
   const seo = useMemo(() => ({
     title: `${brandName} | Seminuevos premium en Monterrey`,
@@ -117,6 +120,3 @@ export function PublicCatalogPage() {
     </>
   );
 }
-  const handleFeaturedSelect = (auto) => {
-    navigate(`/${slug}/inventario?auto=${auto.id}`);
-  };

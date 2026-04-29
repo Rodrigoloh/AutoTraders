@@ -27,7 +27,14 @@ export function PublicSiteFooter({
               submark={brandSubmark}
               className="footer-logo"
             />
-            <p>{blurb}</p>
+            <div className="footer-socials">
+              <a href="#contacto" aria-label="Facebook">
+                <Facebook size={18} />
+              </a>
+              <a href="#contacto" aria-label="Instagram">
+                <Instagram size={18} />
+              </a>
+            </div>
           </div>
 
           <div className="footer-block">
@@ -45,14 +52,7 @@ export function PublicSiteFooter({
                 <span>{hours}</span>
               </div>
             </div>
-            <div className="footer-socials">
-              <a href="#contacto" aria-label="Facebook">
-                <Facebook size={18} />
-              </a>
-              <a href="#contacto" aria-label="Instagram">
-                <Instagram size={18} />
-              </a>
-            </div>
+            <p>{blurb}</p>
           </div>
 
           <div className="footer-block footer-map-block">
@@ -68,9 +68,6 @@ export function PublicSiteFooter({
 
       <div className="copyright-strip">
         <span>{legal}</span>
-        <a href="https://cobalto.blue" rel="noreferrer" target="_blank">
-          Powered by cobalto.blue software
-        </a>
       </div>
     </>
   );

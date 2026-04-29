@@ -1,9 +1,7 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { useSearchParams } from 'react-router-dom';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { CarDetail } from '../components/CarDetail.jsx';
-import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import {
@@ -17,9 +15,9 @@ import { useTenantTheme } from '../styles/themeContext.jsx';
 
 export function InventoryPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
-  const [searchParams] = useSearchParams();
   const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id);
   const [selectedAutoId, setSelectedAutoId] = useState(null);
+  const inventoryAnchorRef = useRef(null);
   const [filters, setFilters] = useState({
     vehicleType: 'all',
     minPrice: '0',
@@ -61,35 +59,19 @@ export function InventoryPage() {
   }, [autos, deferredFilters]);
 
   useEffect(() => {
-    const requestedAutoId = searchParams.get('auto');
-
-    if (requestedAutoId && filteredAutos.some((auto) => auto.id === requestedAutoId)) {
-      setSelectedAutoId(requestedAutoId);
-      return;
-    }
-
-    if (!selectedAutoId && filteredAutos[0]?.id) {
-      setSelectedAutoId(filteredAutos[0].id);
-      return;
-    }
-
     if (selectedAutoId && !filteredAutos.some((auto) => auto.id === selectedAutoId)) {
-      setSelectedAutoId(filteredAutos[0]?.id ?? autos[0]?.id ?? null);
+      setSelectedAutoId(null);
     }
-  }, [selectedAutoId, filteredAutos, autos, searchParams]);
+  }, [selectedAutoId, filteredAutos]);
 
   const selectedAuto =
     filteredAutos.find((auto) => auto.id === selectedAutoId) ??
     autos.find((auto) => auto.id === selectedAutoId) ??
-    filteredAutos[0] ??
-    autos[0] ??
     null;
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
   const logoSrc = theme.logoUrl || demoCatalogContent.logos.header;
-  const footerLogo = theme.logoUrl || demoCatalogContent.logos.footer;
-  const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
   const whatsappNumber = (tenant?.whatsapp ?? '').replace(/\D/g, '');
   const heroImage = primaryImage(filteredAutos[0]);
 
@@ -125,6 +107,30 @@ export function InventoryPage() {
     }
   };
 
+  const handleSelectAuto = (auto) => {
+    setSelectedAutoId(auto.id);
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById('detalle-auto')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 60);
+    });
+  };
+
+  const handleBackToInventory = () => {
+    setSelectedAutoId(null);
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        inventoryAnchorRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 60);
+    });
+  };
+
   if (isLoading || loadingAutos) {
     return (
       <main className="app-shell">
@@ -158,11 +164,6 @@ export function InventoryPage() {
         </section>
 
         <section className="quick-filter-strip secondary-search-strip">
-          <div className="section-head edge-pad">
-            <h2>{demoCatalogContent.inventory.title}</h2>
-            <p>{demoCatalogContent.inventory.subtitle}</p>
-          </div>
-
           <div className="advanced-filter-shell edge-pad">
             <div className="inventory-filter-grid">
               <label className="filter-field">
@@ -225,11 +226,11 @@ export function InventoryPage() {
           </div>
         </section>
 
-        <section className="inventory-section">
+        <section className="inventory-section" ref={inventoryAnchorRef}>
           <CatalogGrid
-            autos={filteredAutos}
+            autos={filteredAutos.slice(0, 6)}
             emptyMessage="No encontramos unidades con esa combinación de búsqueda."
-            onSelect={(auto) => setSelectedAutoId(auto.id)}
+            onSelect={handleSelectAuto}
             variant="inventory"
           />
         </section>
@@ -237,22 +238,12 @@ export function InventoryPage() {
         {selectedAuto ? (
           <CarDetail
             auto={selectedAuto}
+            onBack={handleBackToInventory}
             onContact={(auto) => openWhatsappIntent(auto, 'contacto')}
             onReserve={(auto) => openWhatsappIntent(auto, 'reserva')}
             onTestDrive={(auto) => openWhatsappIntent(auto, 'prueba')}
           />
         ) : null}
-
-        <PublicSiteFooter
-          address={demoCatalogContent.footer.address}
-          blurb={demoCatalogContent.footer.blurb}
-          brandName={brandName}
-          brandSubmark={brandSubmark}
-          footerLogo={footerLogo}
-          hours={demoCatalogContent.footer.hours}
-          legal={demoCatalogContent.footer.legal}
-          phone={phone}
-        />
       </main>
     </>
   );

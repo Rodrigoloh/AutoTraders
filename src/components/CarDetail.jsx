@@ -36,7 +36,7 @@ function specValue(auto, key, fallback) {
   return auto?.meta_tags?.[key] || fallback;
 }
 
-export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
+export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const images = useMemo(() => {
@@ -82,7 +82,6 @@ export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
   return (
     <section className="detail-microsite" id="detalle-auto">
       <div className="section-head edge-pad">
-        <span className="section-kicker">Ficha del vehículo</span>
         <h2>
           {auto?.marca} {auto?.modelo}
           {auto?.version ? ` · ${auto.version}` : ''}
@@ -136,13 +135,13 @@ export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
           </div>
 
           <div className="detail-action-row">
-            <button className="edge-button edge-button-block" onClick={() => onReserve(auto)} type="button">
+            <button className="edge-button" onClick={() => onReserve(auto)} type="button">
               Reserva ahora
             </button>
-            <button className="edge-button edge-button-block" onClick={() => onTestDrive(auto)} type="button">
+            <button className="edge-button" onClick={() => onTestDrive(auto)} type="button">
               Agenda una prueba
             </button>
-            <button className="edge-button edge-button-block edge-button-ghost" onClick={() => onContact(auto)} type="button">
+            <button className="edge-button edge-button-ghost" onClick={() => onContact(auto)} type="button">
               Contacto
             </button>
           </div>
@@ -162,8 +161,7 @@ export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
       <div className="detail-description edge-pad">
         <div className="detail-description-grid">
           <div>
-            <span className="section-kicker">Descripción</span>
-            <p>
+            <p className="detail-description-copy">
               {auto?.descripcion ||
                 'Bloque de texto preparado para una descripción más extensa del vehículo: procedencia, equipamiento, historial, detalles de manejo y puntos de valor para compradores en Monterrey.'}
             </p>
@@ -177,6 +175,9 @@ export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
             </ul>
           </div>
         </div>
+        <button className="edge-button edge-button-ghost detail-back-button" onClick={onBack} type="button">
+          Volver
+        </button>
       </div>
     </section>
   );

@@ -86,6 +86,6 @@ export const demoCatalogContent = {
     blurb:
       'Contacto directo para citas, videos, apartados y seguimiento comercial desde Monterrey.',
     legal:
-      'Demo visual para lotes de autos. Sustituye textos, logos y datos de contacto antes de publicarlo.',
+      '© 2026 Demo Auto Saler | Politicas de Privacidad | Contactanos',
   },
 };

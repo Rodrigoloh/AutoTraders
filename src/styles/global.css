@@ -460,13 +460,15 @@ img {
 .editorial-matrix {
   display: grid;
   gap: 14px;
+  padding-block: 42px 54px;
 }
 
 .editorial-cell {
   display: grid;
   gap: 10px;
-  padding: 22px 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+  min-height: 180px;
+  align-content: start;
+  padding: 30px 0;
 }
 
 .editorial-cell h3 {
@@ -573,6 +575,11 @@ img {
   line-height: 1.7;
 }
 
+.detail-action-row {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
 .detail-spec-strip {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -608,11 +615,20 @@ img {
   padding-block: 24px 40px;
 }
 
+.detail-description-copy {
+  font-size: 1.08rem;
+  line-height: 1.85;
+}
+
 .detail-selling-list {
   margin: 0;
   padding-left: 18px;
   color: var(--muted);
   line-height: 1.8;
+}
+
+.detail-back-button {
+  margin-top: 22px;
 }
 
 .sell-section {
@@ -658,7 +674,7 @@ img {
 
 .site-footer {
   width: 100%;
-  padding: 32px clamp(18px, 3vw, 56px);
+  padding: 44px clamp(18px, 3vw, 56px);
   background: #000;
 }
 
@@ -671,6 +687,8 @@ img {
   display: grid;
   gap: 14px;
   align-content: start;
+  min-height: 280px;
+  padding: 10px 0;
 }
 
 .footer-block p {
@@ -705,20 +723,15 @@ img {
 
 .footer-map-block iframe {
   width: 100%;
-  min-height: 260px;
+  aspect-ratio: 1 / 1;
   background: #111;
 }
 
 .copyright-strip {
-  justify-content: space-between;
   padding: 18px clamp(18px, 3vw, 56px) 32px;
   background: #000;
   color: var(--muted);
   font-size: 0.92rem;
-}
-
-.copyright-strip a {
-  color: #fff;
 }
 
 .empty-state,
@@ -913,7 +926,12 @@ img {
   }
 
   .footer-grid {
-    grid-template-columns: 0.8fr 0.8fr 1.4fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .footer-block + .footer-block {
+    padding-left: 28px;
+    border-left: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   .inventory-grid,
@@ -937,6 +955,12 @@ img {
 @media (min-width: 1200px) {
   .inventory-filter-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .detail-action-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
