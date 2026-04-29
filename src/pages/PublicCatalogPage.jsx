@@ -5,14 +5,13 @@ import { CatalogGrid } from '../components/CatalogGrid';
 import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
-import { usePublicInventory, primaryImage } from '../lib/publicCatalogUtils.js';
+import { usePublicInventory } from '../lib/publicCatalogUtils.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
 export function PublicCatalogPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
   const navigate = useNavigate();
   const { autos, loadingAutos } = usePublicInventory(tenant?.id);
-  const content = tenant?.config_contenido ?? {};
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
@@ -21,7 +20,7 @@ export function PublicCatalogPage() {
   const featuredAutos = autos.slice(0, 4);
   const primaryCtaHref = `/${slug}/inventario`;
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;
-  const heroImage = primaryImage(featuredAutos[0]);
+  const heroImage = demoCatalogContent.heroImage;
   const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
   const handleFeaturedSelect = () => {
     navigate(primaryCtaHref);
@@ -69,12 +68,8 @@ export function PublicCatalogPage() {
           />
 
           <div className="hero-copy-block">
-            <h1 className="hero-title">
-              {content.hero_title ?? demoCatalogContent.hero.title}
-            </h1>
-            <p className="hero-subtext">
-              {content.hero_subtitle ?? demoCatalogContent.hero.subtitle}
-            </p>
+            <h1 className="hero-title">{demoCatalogContent.hero.title}</h1>
+            <p className="hero-subtext">{demoCatalogContent.hero.subtitle}</p>
             <div className="hero-action-row">
               <Link className="edge-button" to={primaryCtaHref}>
                 {demoCatalogContent.hero.primaryCta}
