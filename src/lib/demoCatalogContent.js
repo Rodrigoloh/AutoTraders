@@ -9,7 +9,7 @@ export const demoCatalogContent = {
     footer: '/branding/demo-lote/logo-dark.svg',
   },
   heroImage:
-    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1920&q=80',
+    'https://hips.hearstapps.com/hmg-prod/images/lamborghini-urus-se-2-662915ee316e0.jpg?crop=1xw:1xh;center,top',
   brand: {
     wordmark: 'Lote de Autos del Norte',
     submark: 'Monterrey, N.L.',

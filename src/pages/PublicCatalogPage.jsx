@@ -16,8 +16,8 @@ export function PublicCatalogPage() {
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
-  const logoSrc = theme.logoUrl || demoCatalogContent.logos.header;
-  const footerLogo = theme.logoUrl || demoCatalogContent.logos.footer;
+  const logoSrc = demoCatalogContent.logos.header;
+  const footerLogo = demoCatalogContent.logos.footer;
   const featuredAutos = autos.slice(0, 4);
   const primaryCtaHref = `/${slug}/inventario`;
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;

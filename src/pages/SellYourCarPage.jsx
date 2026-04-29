@@ -7,7 +7,7 @@ export function SellYourCarPage() {
   const { tenant, theme, slug } = useTenantTheme();
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
-  const logoSrc = theme.logoUrl || demoCatalogContent.logos.header;
+  const logoSrc = demoCatalogContent.logos.header;
 
   return (
     <>

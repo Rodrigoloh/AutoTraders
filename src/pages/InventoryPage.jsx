@@ -71,7 +71,7 @@ export function InventoryPage() {
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
-  const logoSrc = theme.logoUrl || demoCatalogContent.logos.header;
+  const logoSrc = demoCatalogContent.logos.header;
   const whatsappNumber = (tenant?.whatsapp ?? '').replace(/\D/g, '');
   const heroImage = primaryImage(filteredAutos[0]);
 
