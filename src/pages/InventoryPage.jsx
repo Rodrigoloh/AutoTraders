@@ -7,11 +7,20 @@ import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import {
   buildBudgetOptions,
   inferVehicleType,
-  primaryImage,
   usePublicInventory,
 } from '../lib/publicCatalogUtils.js';
 import { recordMetric } from '../lib/metrics';
 import { useTenantTheme } from '../styles/themeContext.jsx';
+
+function normalizeBudgetValue(value, fallback = '') {
+  const cleaned = String(value ?? '').replace(/[^\d]/g, '');
+
+  if (!cleaned) {
+    return fallback;
+  }
+
+  return cleaned;
+}
 
 export function InventoryPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
@@ -73,7 +82,7 @@ export function InventoryPage() {
   const brandSubmark = demoCatalogContent.brand.submark;
   const logoSrc = demoCatalogContent.logos.header;
   const whatsappNumber = (tenant?.whatsapp ?? '').replace(/\D/g, '');
-  const heroImage = primaryImage(filteredAutos[0]);
+  const heroImage = demoCatalogContent.heroImage;
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -81,9 +90,9 @@ export function InventoryPage() {
       ...current,
       [name]:
         name === 'maxPrice'
-          ? value || 'all'
+          ? normalizeBudgetValue(value, 'all')
           : name === 'minPrice'
-            ? value || '0'
+            ? normalizeBudgetValue(value, '0')
             : value,
     }));
   };
@@ -201,18 +210,36 @@ export function InventoryPage() {
               </label>
               <label className="filter-field">
                 <span>{demoCatalogContent.inventory.basePriceLabel}</span>
-                <select name="minPrice" onChange={handleFilterChange} value={filters.minPrice}>
+                <input
+                  list="inventory-min-price-options"
+                  inputMode="numeric"
+                  name="minPrice"
+                  onChange={handleFilterChange}
+                  placeholder="Ej. 500000"
+                  type="text"
+                  value={filters.minPrice === '0' ? '' : filters.minPrice}
+                />
+                <datalist id="inventory-min-price-options">
                   {budgetOptions.map((option) => (
                     <option key={`inv-min-${option.value}`} value={option.value}>
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </datalist>
               </label>
               <label className="filter-field">
                 <span>{demoCatalogContent.inventory.topPriceLabel}</span>
-                <select name="maxPrice" onChange={handleFilterChange} value={filters.maxPrice}>
-                  <option value="all">Sin tope</option>
+                <input
+                  list="inventory-max-price-options"
+                  inputMode="numeric"
+                  name="maxPrice"
+                  onChange={handleFilterChange}
+                  placeholder="Sin tope"
+                  type="text"
+                  value={filters.maxPrice === 'all' ? '' : filters.maxPrice}
+                />
+                <datalist id="inventory-max-price-options">
+                  <option value="">Sin tope</option>
                   {budgetOptions
                     .filter((option) => option.value !== '0')
                     .map((option) => (
@@ -220,7 +247,7 @@ export function InventoryPage() {
                         {option.label}
                       </option>
                     ))}
-                </select>
+                </datalist>
               </label>
             </div>
           </div>

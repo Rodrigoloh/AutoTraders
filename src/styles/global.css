@@ -866,6 +866,29 @@ img {
   gap: 12px;
 }
 
+.inventory-image-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.inventory-image-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-image-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+.inventory-image-meta {
+  display: grid;
+  gap: 10px;
+}
+
 .inventory-thumb {
   width: 100%;
   background: rgba(255, 255, 255, 0.06);
@@ -922,6 +945,10 @@ img {
   }
 
   .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-image-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

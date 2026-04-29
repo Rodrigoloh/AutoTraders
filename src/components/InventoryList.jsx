@@ -1,5 +1,18 @@
-import { CarFront, Trash2, CheckCheck } from 'lucide-react';
+import { useState } from 'react';
+import {
+  CarFront,
+  Trash2,
+  CheckCheck,
+  Pencil,
+  Save,
+  X,
+  LoaderCircle,
+  ImagePlus,
+  ArrowLeft,
+  ArrowRight,
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { uploadInventoryImages } from '../lib/inventoryImages.js';
 
 function getImage(auto) {
   if (Array.isArray(auto.imagenes) && auto.imagenes[0]) {
@@ -17,21 +30,164 @@ function money(amount, currency = 'MXN') {
   }).format(Number(amount ?? 0));
 }
 
-export function InventoryList({ autos, canDelete = false, onRefresh }) {
+function buildDraft(auto) {
+  return {
+    marca: auto.marca ?? '',
+    modelo: auto.modelo ?? '',
+    anio: auto.anio ?? '',
+    version: auto.version ?? '',
+    precio: auto.precio ?? '',
+    kilometraje: auto.kilometraje ?? '',
+    combustible: auto.combustible ?? '',
+    transmision: auto.transmision ?? '',
+    ciudad: auto.ciudad ?? '',
+    estado: auto.estado ?? '',
+    descripcion: auto.descripcion ?? '',
+    imagenes: Array.isArray(auto.imagenes) ? [...auto.imagenes] : [],
+  };
+}
+
+export function InventoryList({
+  autos,
+  canDelete = false,
+  canEdit = false,
+  canManageImages = false,
+  canMarkSold = false,
+  loteId = '',
+  onRefresh,
+}) {
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [savingId, setSavingId] = useState('');
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [statusMessage, setStatusMessage] = useState('');
+
   const handleMarkSold = async (autoId) => {
+    setStatusMessage('');
     const { error } = await supabase.from('inventario').update({ estatus: 'vendido' }).eq('id', autoId);
 
     if (!error) {
       onRefresh?.();
+      return;
     }
+
+    setStatusMessage(error.message ?? 'No se pudo marcar el auto como vendido.');
   };
 
   const handleDelete = async (autoId) => {
+    setStatusMessage('');
     const { error } = await supabase.from('inventario').delete().eq('id', autoId);
 
     if (!error) {
       onRefresh?.();
+      return;
     }
+
+    setStatusMessage(error.message ?? 'No se pudo eliminar el auto.');
+  };
+
+  const startEdit = (auto) => {
+    setEditingId(auto.id);
+    setDraft(buildDraft(auto));
+    setPendingFiles([]);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(null);
+    setPendingFiles([]);
+  };
+
+  const handleDraftChange = (event) => {
+    const { name, value } = event.target;
+    setDraft((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleFilesChange = (event) => {
+    setPendingFiles(Array.from(event.target.files ?? []));
+  };
+
+  const moveImage = (index, direction) => {
+    setDraft((current) => {
+      if (!current || !Array.isArray(current.imagenes)) {
+        return current;
+      }
+
+      const nextImages = [...current.imagenes];
+      const targetIndex = direction === 'left' ? index - 1 : index + 1;
+
+      if (targetIndex < 0 || targetIndex >= nextImages.length) {
+        return current;
+      }
+
+      [nextImages[index], nextImages[targetIndex]] = [nextImages[targetIndex], nextImages[index]];
+
+      return { ...current, imagenes: nextImages };
+    });
+  };
+
+  const removeImage = (index) => {
+    setDraft((current) => {
+      if (!current || !Array.isArray(current.imagenes)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        imagenes: current.imagenes.filter((_, imageIndex) => imageIndex !== index),
+      };
+    });
+  };
+
+  const saveEdit = async (autoId) => {
+    if (!draft) {
+      return;
+    }
+
+    setStatusMessage('');
+    setSavingId(autoId);
+
+    let uploadedImages = [];
+
+    try {
+      if (canManageImages && pendingFiles.length && loteId) {
+        uploadedImages = await uploadInventoryImages(loteId, pendingFiles);
+      }
+    } catch (error) {
+      setStatusMessage(error.message ?? 'No se pudieron subir las imágenes.');
+      setSavingId('');
+      return;
+    }
+
+    const payload = {
+      marca: draft.marca,
+      modelo: draft.modelo,
+      anio: Number(draft.anio),
+      version: draft.version || null,
+      precio: Number(draft.precio || 0),
+      kilometraje: draft.kilometraje ? Number(draft.kilometraje) : null,
+      combustible: draft.combustible || null,
+      transmision: draft.transmision || null,
+      ciudad: draft.ciudad || null,
+      estado: draft.estado || null,
+      descripcion: draft.descripcion || null,
+    };
+
+    if (canManageImages) {
+      payload.imagenes = [...(draft.imagenes ?? []), ...uploadedImages];
+    }
+
+    const { error } = await supabase.from('inventario').update(payload).eq('id', autoId);
+
+    setSavingId('');
+
+    if (!error) {
+      cancelEdit();
+      onRefresh?.();
+      return;
+    }
+
+    setStatusMessage(error.message ?? 'No se pudo actualizar el auto.');
   };
 
   if (!autos.length) {
@@ -48,6 +204,7 @@ export function InventoryList({ autos, canDelete = false, onRefresh }) {
         <h2 className="heading-md">Inventario actual</h2>
         <p className="muted">Acciones rápidas para lotes que operan desde celular.</p>
       </div>
+      {statusMessage ? <div className="muted">{statusMessage}</div> : null}
       <div className="inventory-grid">
         {autos.map((auto) => (
           <article className="inventory-item" key={auto.id}>
@@ -76,10 +233,18 @@ export function InventoryList({ autos, canDelete = false, onRefresh }) {
                 </span>
               </div>
               <div className="inventory-actions">
-                <button className="btn-soft" onClick={() => handleMarkSold(auto.id)} type="button">
-                  <CheckCheck size={16} />
-                  Marcar como Vendido
-                </button>
+                {canEdit ? (
+                  <button className="btn-soft" onClick={() => startEdit(auto)} type="button">
+                    <Pencil size={16} />
+                    Editar specs
+                  </button>
+                ) : null}
+                {canMarkSold ? (
+                  <button className="btn-soft" onClick={() => handleMarkSold(auto.id)} type="button">
+                    <CheckCheck size={16} />
+                    Marcar como Vendido
+                  </button>
+                ) : null}
                 {canDelete ? (
                   <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
                     <Trash2 size={16} />
@@ -87,6 +252,140 @@ export function InventoryList({ autos, canDelete = false, onRefresh }) {
                   </button>
                 ) : null}
               </div>
+              {canEdit && editingId === auto.id && draft ? (
+                <div className="panel-card stack-md">
+                  <div>
+                    <strong>Editar tarjeta y specs</strong>
+                    <p className="muted">
+                      Ajusta solo la información visible del auto para la tarjeta y la ficha.
+                    </p>
+                  </div>
+                  <div className="form-grid">
+                    <div className="field">
+                      <label htmlFor={`marca-${auto.id}`}>Marca</label>
+                      <input id={`marca-${auto.id}`} name="marca" onChange={handleDraftChange} value={draft.marca} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`modelo-${auto.id}`}>Modelo</label>
+                      <input id={`modelo-${auto.id}`} name="modelo" onChange={handleDraftChange} value={draft.modelo} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`anio-${auto.id}`}>Año</label>
+                      <input id={`anio-${auto.id}`} name="anio" onChange={handleDraftChange} type="number" value={draft.anio} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`version-${auto.id}`}>Versión</label>
+                      <input id={`version-${auto.id}`} name="version" onChange={handleDraftChange} value={draft.version} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`precio-${auto.id}`}>Precio</label>
+                      <input id={`precio-${auto.id}`} name="precio" onChange={handleDraftChange} type="number" value={draft.precio} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`kilometraje-${auto.id}`}>Kilometraje</label>
+                      <input id={`kilometraje-${auto.id}`} name="kilometraje" onChange={handleDraftChange} type="number" value={draft.kilometraje} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`combustible-${auto.id}`}>Combustible</label>
+                      <input id={`combustible-${auto.id}`} name="combustible" onChange={handleDraftChange} value={draft.combustible} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`transmision-${auto.id}`}>Transmisión</label>
+                      <input id={`transmision-${auto.id}`} name="transmision" onChange={handleDraftChange} value={draft.transmision} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`ciudad-${auto.id}`}>Ciudad</label>
+                      <input id={`ciudad-${auto.id}`} name="ciudad" onChange={handleDraftChange} value={draft.ciudad} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`estado-${auto.id}`}>Estado</label>
+                      <input id={`estado-${auto.id}`} name="estado" onChange={handleDraftChange} value={draft.estado} />
+                    </div>
+                    <div className="field" data-span="full">
+                      <label htmlFor={`descripcion-${auto.id}`}>Descripción</label>
+                      <textarea
+                        id={`descripcion-${auto.id}`}
+                        name="descripcion"
+                        onChange={handleDraftChange}
+                        value={draft.descripcion}
+                      />
+                    </div>
+                    {canManageImages ? (
+                      <div className="field" data-span="full">
+                        <label htmlFor={`imagenes-${auto.id}`}>Imágenes del auto</label>
+                        <input
+                          accept="image/*"
+                          id={`imagenes-${auto.id}`}
+                          multiple
+                          onChange={handleFilesChange}
+                          type="file"
+                        />
+                        <span className="muted">
+                          La primera imagen del arreglo se usa como portada de la tarjeta pública.
+                        </span>
+                        {draft.imagenes?.length ? (
+                          <div className="inventory-image-grid">
+                            {draft.imagenes.map((image, index) => (
+                              <article className="inventory-image-card" key={`${image}-${index}`}>
+                                <img alt={`${auto.marca} ${auto.modelo} ${index + 1}`} src={image} />
+                                <div className="inventory-image-meta">
+                                  <strong>{index === 0 ? 'Portada actual' : `Imagen ${index + 1}`}</strong>
+                                  <div className="inventory-actions">
+                                    <button
+                                      className="btn-soft"
+                                      disabled={index === 0}
+                                      onClick={() => moveImage(index, 'left')}
+                                      type="button"
+                                    >
+                                      <ArrowLeft size={16} />
+                                      Subir
+                                    </button>
+                                    <button
+                                      className="btn-soft"
+                                      disabled={index === draft.imagenes.length - 1}
+                                      onClick={() => moveImage(index, 'right')}
+                                      type="button"
+                                    >
+                                      <ArrowRight size={16} />
+                                      Bajar
+                                    </button>
+                                    <button
+                                      className="btn-outline"
+                                      onClick={() => removeImage(index)}
+                                      type="button"
+                                    >
+                                      <Trash2 size={16} />
+                                      Quitar
+                                    </button>
+                                  </div>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="panel-card muted">Este auto no tiene imágenes cargadas todavía.</div>
+                        )}
+                        {pendingFiles.length ? (
+                          <span className="muted inline-row">
+                            <ImagePlus size={16} />
+                            {pendingFiles.length} archivo(s) listo(s) para agregar al final del carrusel
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="inventory-actions">
+                    <button className="btn" disabled={savingId === auto.id} onClick={() => saveEdit(auto.id)} type="button">
+                      {savingId === auto.id ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />}
+                      Guardar cambios
+                    </button>
+                    <button className="btn-outline" onClick={cancelEdit} type="button">
+                      <X size={16} />
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </article>
         ))}

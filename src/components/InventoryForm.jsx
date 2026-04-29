@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ImagePlus, LoaderCircle, Save } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { uploadInventoryImages } from '../lib/inventoryImages.js';
 
 const initialForm = {
   marca: '',
@@ -15,31 +16,6 @@ const initialForm = {
   estado: '',
   descripcion: '',
 };
-
-function normalizeFileName(fileName) {
-  return fileName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9.-]/g, '');
-}
-
-async function uploadImages(loteId, files) {
-  const uploadResults = [];
-
-  for (const file of files) {
-    const path = `${loteId}/${crypto.randomUUID()}-${normalizeFileName(file.name)}`;
-    const { data, error } = await supabase.storage.from('autos').upload(path, file, {
-      upsert: false,
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    const { data: publicUrl } = supabase.storage.from('autos').getPublicUrl(data.path);
-
-    uploadResults.push(publicUrl.publicUrl);
-  }
-
-  return uploadResults;
-}
 
 export function InventoryForm({ loteId, onCreated }) {
   const [form, setForm] = useState(initialForm);
@@ -69,7 +45,7 @@ export function InventoryForm({ loteId, onCreated }) {
     setIsSaving(true);
 
     try {
-      const imagenes = files.length ? await uploadImages(loteId, files) : [];
+      const imagenes = files.length ? await uploadInventoryImages(loteId, files) : [];
 
       const payload = {
         lote_id: loteId,

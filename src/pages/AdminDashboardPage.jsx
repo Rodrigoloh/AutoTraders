@@ -112,7 +112,7 @@ export function AdminDashboardPage() {
     ] = await Promise.all([
       supabase
         .from('inventario')
-        .select('id, marca, modelo, anio, version, precio, moneda, ciudad, estado, estatus, imagenes')
+        .select('id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes')
         .eq('lote_id', tenant.id)
         .order('created_at', { ascending: false }),
       supabase
@@ -190,7 +190,13 @@ export function AdminDashboardPage() {
     window.location.assign(`/${slug}/admin/login`);
   };
 
+  const isSuperAdmin = sessionRole === 'super_admin';
   const canManageLote = ['lote_admin', 'super_admin'].includes(sessionRole);
+  const canEditInventorySpecs = ['lote_admin', 'super_admin'].includes(sessionRole);
+  const canEditContent = ['lote_admin', 'super_admin'].includes(sessionRole);
+  const canCreateInventory = isSuperAdmin;
+  const canDeleteInventory = isSuperAdmin;
+  const canMarkSold = isSuperAdmin;
   const profileMap = useMemo(
     () => new Map(profiles.map((profile) => [profile.id, profile])),
     [profiles],
@@ -394,10 +400,28 @@ export function AdminDashboardPage() {
             </div>
           </section>
 
-          <InventoryForm loteId={tenant?.id} onCreated={loadDashboard} />
-          <InventoryList autos={autos} canDelete={canManageLote} onRefresh={loadDashboard} />
+          {canCreateInventory ? (
+            <InventoryForm loteId={tenant?.id} onCreated={loadDashboard} />
+          ) : (
+            <div className="panel-card stack-sm">
+              <strong>Permisos del lote_admin</strong>
+              <p className="muted">
+                Desde este panel solo puedes editar textos del sitio y specs visibles de los autos.
+                Alta, borrado, cambio de estatus y gestión de usuarios quedan reservados al superadmin.
+              </p>
+            </div>
+          )}
+          <InventoryList
+            autos={autos}
+            canDelete={canDeleteInventory}
+            canEdit={canEditInventorySpecs}
+            canManageImages={isSuperAdmin}
+            canMarkSold={canMarkSold}
+            loteId={tenant?.id}
+            onRefresh={loadDashboard}
+          />
           {feedback ? <div className="panel-card muted">{feedback}</div> : null}
-          {canManageLote ? (
+          {isSuperAdmin ? (
             <section className="dashboard-grid">
               <form className="form-card stack-md" onSubmit={handleInvite}>
                 <div className="inline-row">
@@ -499,7 +523,7 @@ export function AdminDashboardPage() {
                   ))}
                 </div>
               </form>
-
+              {canEditContent ? (
               <form className="form-card stack-md" onSubmit={saveContent}>
                 <div className="inline-row">
                   <div>
@@ -627,7 +651,136 @@ export function AdminDashboardPage() {
                   Guardar contenido
                 </button>
               </form>
+              ) : null}
             </section>
+          ) : null}
+          {!isSuperAdmin && canEditContent ? (
+            <form className="form-card stack-md" onSubmit={saveContent}>
+              <div className="inline-row">
+                <div>
+                  <h2 className="heading-md">Textos del lote</h2>
+                  <p className="muted">
+                    Como lote_admin puedes editar textos públicos y datos de contacto del sitio.
+                  </p>
+                </div>
+                <Palette size={20} />
+              </div>
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="email_contacto">Email de contacto</label>
+                  <input
+                    id="email_contacto"
+                    name="email_contacto"
+                    onChange={handleContentChange}
+                    type="email"
+                    value={contentForm.email_contacto}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="telefono">Teléfono</label>
+                  <input
+                    id="telefono"
+                    name="telefono"
+                    onChange={handleContentChange}
+                    value={contentForm.telefono}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="whatsapp">WhatsApp</label>
+                  <input
+                    id="whatsapp"
+                    name="whatsapp"
+                    onChange={handleContentChange}
+                    value={contentForm.whatsapp}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="powered_by_label">Powered by</label>
+                  <input
+                    id="powered_by_label"
+                    name="powered_by_label"
+                    onChange={handleContentChange}
+                    value={contentForm.powered_by_label}
+                  />
+                </div>
+                <div className="field" data-span="full">
+                  <label htmlFor="hero_title">Titulo principal del hero</label>
+                  <input
+                    id="hero_title"
+                    name="hero_title"
+                    onChange={handleContentChange}
+                    value={contentForm.hero_title}
+                  />
+                </div>
+                <div className="field" data-span="full">
+                  <label htmlFor="hero_subtitle">Subtitulo del hero</label>
+                  <textarea
+                    id="hero_subtitle"
+                    name="hero_subtitle"
+                    onChange={handleContentChange}
+                    value={contentForm.hero_subtitle}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="intro_title">Titulo de introduccion</label>
+                  <input
+                    id="intro_title"
+                    name="intro_title"
+                    onChange={handleContentChange}
+                    value={contentForm.intro_title}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="about_title">Titulo de seccion informativa</label>
+                  <input
+                    id="about_title"
+                    name="about_title"
+                    onChange={handleContentChange}
+                    value={contentForm.about_title}
+                  />
+                </div>
+                <div className="field" data-span="full">
+                  <label htmlFor="intro_body">Texto de introduccion</label>
+                  <textarea
+                    id="intro_body"
+                    name="intro_body"
+                    onChange={handleContentChange}
+                    value={contentForm.intro_body}
+                  />
+                </div>
+                <div className="field" data-span="full">
+                  <label htmlFor="about_body">Texto de seccion informativa</label>
+                  <textarea
+                    id="about_body"
+                    name="about_body"
+                    onChange={handleContentChange}
+                    value={contentForm.about_body}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="contact_title">Titulo de contacto</label>
+                  <input
+                    id="contact_title"
+                    name="contact_title"
+                    onChange={handleContentChange}
+                    value={contentForm.contact_title}
+                  />
+                </div>
+                <div className="field" data-span="full">
+                  <label htmlFor="contact_body">Texto de contacto</label>
+                  <textarea
+                    id="contact_body"
+                    name="contact_body"
+                    onChange={handleContentChange}
+                    value={contentForm.contact_body}
+                  />
+                </div>
+              </div>
+              <button className="btn" type="submit">
+                <Save size={18} />
+                Guardar contenido
+              </button>
+            </form>
           ) : null}
         </div>
       </main>
