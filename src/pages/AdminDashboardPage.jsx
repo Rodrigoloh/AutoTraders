@@ -76,6 +76,44 @@ function normalizeMetrics(metrics) {
   return Array.from(byDate.values());
 }
 
+function applyDemoDashboardTimeline(autos, slug) {
+  if (slug !== 'demo-lote-norte') {
+    return autos;
+  }
+
+  const realAutos = autos.filter((auto) => {
+    const id = String(auto?.id ?? '');
+    return id !== 'demo-base' && !id.includes('-demo-');
+  });
+
+  const baseTimestamp = realAutos.length
+    ? Math.max(
+        ...realAutos
+          .map((auto) => new Date(auto.created_at ?? Date.now()).getTime())
+          .filter(Boolean),
+      )
+    : Date.now();
+
+  const realOffsets = [0, 6, 13];
+  const demoOffsets = [0, 30, 58, 84];
+
+  let realIndex = 0;
+  let demoIndex = 0;
+
+  return autos.map((auto) => {
+    const id = String(auto?.id ?? '');
+    const isDemo = id === 'demo-base' || id.includes('-demo-');
+    const offsets = isDemo ? demoOffsets : realOffsets;
+    const pointer = isDemo ? demoIndex++ : realIndex++;
+    const offsetDays = offsets[pointer] ?? offsets[offsets.length - 1] + (pointer - offsets.length + 1) * 14;
+
+    return {
+      ...auto,
+      created_at: new Date(baseTimestamp - offsetDays * 24 * 60 * 60 * 1000).toISOString(),
+    };
+  });
+}
+
 export function AdminDashboardPage() {
   const { tenant, slug } = useTenantTheme();
   const [autos, setAutos] = useState([]);
@@ -131,7 +169,10 @@ export function AdminDashboardPage() {
     loadDashboard();
   }, [tenant?.id]);
 
-  const dashboardAutos = useMemo(() => expandDemoAutos(autos, 6), [autos]);
+  const dashboardAutos = useMemo(
+    () => applyDemoDashboardTimeline(expandDemoAutos(autos, 6), slug),
+    [autos, slug],
+  );
 
   const summary = useMemo(() => {
     const totalViews = metrics.reduce((sum, row) => sum + Number(row.vistas_totales ?? 0), 0);
