@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
+  CarFront,
   ChevronLeft,
   ChevronRight,
+  Cog,
   Fuel,
   Gauge,
-  MapPin,
+  GitBranch,
   Settings2,
-  ShieldCheck,
+  Users,
 } from 'lucide-react';
 
 function placeholderImage() {
-  return 'https://images.unsplash.com/photo-1494976688153-cbe2305abf84?auto=format&fit=crop&w=1400&q=80';
+  return 'https://images.unsplash.com/photo-1494976688153-cbe2305abf84?auto=format&fit=crop&w=1600&q=80';
 }
 
 function formatPrice(price, currency = 'MXN') {
@@ -30,12 +32,16 @@ function formatMileage(kilometraje) {
   return `${Number(kilometraje).toLocaleString('es-MX')} km`;
 }
 
-export function CarDetail({ auto, onReserve }) {
+function specValue(auto, key, fallback) {
+  return auto?.meta_tags?.[key] || fallback;
+}
+
+export function CarDetail({ auto, onContact, onReserve, onTestDrive }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const images = useMemo(() => {
     if (Array.isArray(auto?.imagenes) && auto.imagenes.length > 0) {
-      return auto.imagenes;
+      return auto.imagenes.slice(0, 8);
     }
 
     return [placeholderImage(), placeholderImage(), placeholderImage()];
@@ -46,19 +52,15 @@ export function CarDetail({ auto, onReserve }) {
   }, [auto?.id]);
 
   const activeImage = images[currentIndex] ?? images[0];
-  const location = [auto?.ciudad, auto?.estado].filter(Boolean).join(', ') || 'Monterrey, N.L.';
-
   const specs = [
     { icon: CalendarDays, label: 'Año', value: auto?.anio ?? 'N/D' },
-    { icon: Gauge, label: 'Kilometraje', value: formatMileage(auto?.kilometraje) },
+    { icon: Gauge, label: 'KM', value: formatMileage(auto?.kilometraje) },
+    { icon: CarFront, label: 'Carrocería', value: specValue(auto, 'body_shape', 'Sedán') },
     { icon: Settings2, label: 'Transmisión', value: auto?.transmision || 'Automática' },
+    { icon: Cog, label: 'Motor', value: specValue(auto, 'motor', 'Turbo') },
+    { icon: GitBranch, label: 'Tracción', value: specValue(auto, 'traccion', 'Delantera') },
+    { icon: Users, label: 'Asientos', value: specValue(auto, 'asientos', '5') },
     { icon: Fuel, label: 'Combustible', value: auto?.combustible || 'Gasolina' },
-  ];
-
-  const sellingPoints = [
-    'Consignación directa con respuesta rápida.',
-    'Crédito inmediato con solo INE.',
-    'Atención por WhatsApp y video del auto al momento.',
   ];
 
   const moveGallery = (direction) => {
@@ -78,63 +80,78 @@ export function CarDetail({ auto, onReserve }) {
   };
 
   return (
-    <section className="detail-shell" id="detalle-auto">
-      <div className="detail-header">
-        <div className="stack-sm">
-          <span className="catalog-eyebrow">Ficha del auto</span>
-          <h2 className="heading-lg">
-            {auto?.marca} {auto?.modelo} {auto?.anio}
-          </h2>
-          <p className="muted">
-            {auto?.version ||
-              'Unidad seleccionada para demo premium. Puedes reemplazar este texto por equipamiento, historial o procedencia.'}
-          </p>
-        </div>
-        <div className="detail-price-box">
-          <strong>{formatPrice(auto?.precio, auto?.moneda)}</strong>
-          <span>{location}</span>
-        </div>
+    <section className="detail-microsite" id="detalle-auto">
+      <div className="section-head edge-pad">
+        <span className="section-kicker">Ficha del vehículo</span>
+        <h2>
+          {auto?.marca} {auto?.modelo}
+          {auto?.version ? ` · ${auto.version}` : ''}
+        </h2>
+        <p>{formatPrice(auto?.precio, auto?.moneda)}</p>
       </div>
 
-      <div className="detail-gallery-grid">
-        <div className="detail-gallery-main">
-          <img src={activeImage} alt={`${auto?.marca} ${auto?.modelo}`} />
-          <button className="gallery-nav gallery-nav-left" onClick={() => moveGallery(-1)} type="button">
-            <ChevronLeft size={18} />
-          </button>
-          <button className="gallery-nav gallery-nav-right" onClick={() => moveGallery(1)} type="button">
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <div className="detail-gallery-thumbs">
-          {images.map((image, index) => (
+      <div className="detail-hero-grid edge-pad">
+        <div className="detail-carousel">
+          <div className="detail-stage">
+            <img alt={`${auto?.marca} ${auto?.modelo}`} src={activeImage} />
             <button
-              className={`detail-thumb ${index === currentIndex ? 'detail-thumb-active' : ''}`}
-              key={`${image}-${index}`}
-              onClick={() => setCurrentIndex(index)}
+              aria-label="Imagen anterior"
+              className="carousel-nav carousel-nav-left"
+              onClick={() => moveGallery(-1)}
               type="button"
             >
-              <img src={image} alt={`${auto?.marca} vista ${index + 1}`} />
+              <ChevronLeft size={20} />
             </button>
-          ))}
+            <button
+              aria-label="Imagen siguiente"
+              className="carousel-nav carousel-nav-right"
+              onClick={() => moveGallery(1)}
+              type="button"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          <div className="detail-thumb-track">
+            {images.map((image, index) => (
+              <button
+                className={`detail-thumb-button ${index === currentIndex ? 'detail-thumb-active' : ''}`}
+                key={`${image}-${index}`}
+                onClick={() => setCurrentIndex(index)}
+                type="button"
+              >
+                <img alt={`${auto?.marca} imagen ${index + 1}`} src={image} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="detail-summary">
+          <div className="detail-summary-copy">
+            <h3>{auto?.marca} {auto?.modelo} {auto?.anio}</h3>
+            <p>
+              {auto?.descripcion ||
+                'Unidad lista para entrega, consignación directa y atención inmediata en Monterrey.'}
+            </p>
+          </div>
+
+          <div className="detail-action-row">
+            <button className="edge-button edge-button-block" onClick={() => onReserve(auto)} type="button">
+              Reserva ahora
+            </button>
+            <button className="edge-button edge-button-block" onClick={() => onTestDrive(auto)} type="button">
+              Agenda una prueba
+            </button>
+            <button className="edge-button edge-button-block edge-button-ghost" onClick={() => onContact(auto)} type="button">
+              Contacto
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="detail-actions">
-        <button className="btn" onClick={() => onReserve(auto)} type="button">
-          Reservar Ahora!
-        </button>
-        <a className="btn-outline" href="#contacto">
-          Solicitar llamada
-        </a>
-        <a className="btn-outline" href="#inventario">
-          Volver al inventario
-        </a>
-      </div>
-
-      <div className="detail-spec-grid">
+      <div className="detail-spec-strip edge-pad">
         {specs.map(({ icon: Icon, label, value }) => (
-          <article className="detail-spec-card" key={label}>
+          <article className="detail-spec-item" key={label}>
             <Icon size={18} />
             <span>{label}</span>
             <strong>{value}</strong>
@@ -142,39 +159,24 @@ export function CarDetail({ auto, onReserve }) {
         ))}
       </div>
 
-      <div className="detail-editorial-grid">
-        <article className="editorial-card">
-          <h3 className="heading-md">Venta directa en Monterrey</h3>
-          <p className="muted">
-            Unidades publicadas con atención rápida, seguimiento comercial y coordinación de
-            citas en la zona metropolitana.
-          </p>
-        </article>
-        <article className="editorial-card">
-          <h3 className="heading-md">Mensajes cortos y claros</h3>
-          <ul className="catalog-bullet-list">
-            {sellingPoints.map((item) => (
-              <li key={item}>
-                <ShieldCheck size={16} />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-        <article className="editorial-card">
-          <h3 className="heading-md">Descripción</h3>
-          <p className="muted">
-            {auto?.descripcion ||
-              'Agrega aquí una descripción breve: equipamiento, historial, documentación, estética o mensaje comercial enfocado al perfil del comprador.'}
-          </p>
-        </article>
-        <article className="editorial-card">
-          <h3 className="heading-md">Ubicación y entrega</h3>
-          <p className="muted">
-            <MapPin size={16} style={{ verticalAlign: 'text-bottom', marginRight: 6 }} />
-            {location}. Entrega o revisión por cita en Monterrey y área metropolitana.
-          </p>
-        </article>
+      <div className="detail-description edge-pad">
+        <div className="detail-description-grid">
+          <div>
+            <span className="section-kicker">Descripción</span>
+            <p>
+              {auto?.descripcion ||
+                'Bloque de texto preparado para una descripción más extensa del vehículo: procedencia, equipamiento, historial, detalles de manejo y puntos de valor para compradores en Monterrey.'}
+            </p>
+          </div>
+          <div>
+            <span className="section-kicker">Mensajes de venta</span>
+            <ul className="detail-selling-list">
+              <li>Consignación directa.</li>
+              <li>Crédito inmediato con solo INE.</li>
+              <li>Agenda visita o video por WhatsApp.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
   );

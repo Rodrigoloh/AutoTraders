@@ -1,4 +1,4 @@
-import { ArrowRight, Gauge, MapPin } from 'lucide-react';
+import { CalendarDays, Fuel, Gauge, Settings2 } from 'lucide-react';
 
 function formatPrice(price, currency = 'MXN') {
   return new Intl.NumberFormat('es-MX', {
@@ -9,59 +9,69 @@ function formatPrice(price, currency = 'MXN') {
 }
 
 function primaryImage(auto) {
-  if (Array.isArray(auto.imagenes) && auto.imagenes.length > 0) {
+  if (Array.isArray(auto?.imagenes) && auto.imagenes.length > 0) {
     return auto.imagenes[0];
   }
 
   return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80';
 }
 
-export function AutoCard({ auto, onReserve, onSelect }) {
+function shortMileage(value) {
+  if (!value) {
+    return 'Por confirmar';
+  }
+
+  return `${Number(value).toLocaleString('es-MX')} km`;
+}
+
+export function AutoCard({ auto, onSelect, variant = 'featured' }) {
+  const title =
+    variant === 'inventory'
+      ? `${auto.marca} ${auto.modelo}${auto.version ? ` · ${auto.version}` : ''}`
+      : auto.modelo;
+
+  const specs = [
+    { icon: CalendarDays, label: 'Año', value: auto.anio ?? 'N/D' },
+    { icon: Gauge, label: 'KM', value: shortMileage(auto.kilometraje) },
+    { icon: Fuel, label: 'Combustible', value: auto.combustible || 'Gasolina' },
+    { icon: Settings2, label: 'Transmisión', value: auto.transmision || 'Automática' },
+  ];
+
   return (
-    <article className="catalog-vehicle-card">
-      <button className="catalog-vehicle-media catalog-vehicle-hitbox" onClick={() => onSelect(auto)} type="button">
+    <article className={`vehicle-card vehicle-card-${variant}`}>
+      <button className="vehicle-media" onClick={() => onSelect(auto)} type="button">
         <img
-          src={primaryImage(auto)}
           alt={`${auto.marca} ${auto.modelo} ${auto.anio}`}
           loading="lazy"
+          src={primaryImage(auto)}
         />
       </button>
-      <div className="catalog-vehicle-body">
-        <div className="inline-row">
-          <span className="catalog-card-kicker">{auto.marca}</span>
-          <strong className="catalog-card-price">{formatPrice(auto.precio, auto.moneda)}</strong>
+
+      <div className="vehicle-content">
+        <div className="vehicle-headline">
+          <span className="vehicle-brand">{auto.marca}</span>
+          <strong className="vehicle-price">{formatPrice(auto.precio, auto.moneda)}</strong>
         </div>
-        <div className="stack-sm">
-          <button className="catalog-title-button" onClick={() => onSelect(auto)} type="button">
-            <h3 className="heading-md">
-              {auto.modelo} {auto.anio}
-            </h3>
-          </button>
-          <p className="muted">
-            {auto.version || 'Seminuevo disponible para entrega inmediata.'}
-          </p>
+
+        <button className="vehicle-title-button" onClick={() => onSelect(auto)} type="button">
+          <h3 className="vehicle-model">{title}</h3>
+        </button>
+
+        <div className="vehicle-spec-grid">
+          {specs.map(({ icon: Icon, label, value }) => (
+            <div className="vehicle-spec" key={label}>
+              <span>
+                <Icon size={14} />
+                {label}
+              </span>
+              <strong>{value}</strong>
+            </div>
+          ))}
         </div>
-        <div className="catalog-card-specs">
-          <span>
-            <Gauge size={15} />
-            {auto.kilometraje
-              ? `${auto.kilometraje.toLocaleString('es-MX')} km`
-              : 'Kilometraje por confirmar'}
-          </span>
-          <span>
-            <MapPin size={15} />
-            {[auto.ciudad, auto.estado].filter(Boolean).join(', ') || 'Monterrey'}
-          </span>
-        </div>
-        <div className="catalog-card-actions">
-          <button className="btn" onClick={() => onReserve(auto)} type="button">
-            Reservar Ahora!
-          </button>
-          <button className="btn-outline" onClick={() => onSelect(auto)} type="button">
-            Ver ficha
-            <ArrowRight size={18} />
-          </button>
-        </div>
+
+        <button className="edge-button edge-button-block" onClick={() => onSelect(auto)} type="button">
+          Ver Vehículo
+        </button>
       </div>
     </article>
   );
