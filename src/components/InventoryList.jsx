@@ -41,6 +41,33 @@ function money(amount, currency = 'MXN') {
   }).format(Number(amount ?? 0));
 }
 
+function isPlaceholderAuto(auto) {
+  const id = String(auto?.id ?? '');
+  return id === 'demo-base' || id.includes('-demo-');
+}
+
+function formatEntryDate(value) {
+  if (!value) {
+    return 'Sin fecha';
+  }
+
+  return new Date(value).toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function weeksInInventory(value) {
+  if (!value) {
+    return null;
+  }
+
+  const diff = Date.now() - new Date(value).getTime();
+  const weeks = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24 * 7)));
+  return weeks;
+}
+
 function buildDraft(auto) {
   return {
     marca: auto.marca ?? '',
@@ -266,6 +293,9 @@ export function InventoryList({
       <div className="inventory-grid">
         {filteredAutos.map((auto) => (
           <article className="inventory-item" key={auto.id}>
+            {isPlaceholderAuto(auto) ? (
+              <span className="tenant-badge">Demo visual</span>
+            ) : null}
             <div className="inventory-thumb">
               <img src={getImage(auto)} alt={`${auto.marca} ${auto.modelo}`} />
             </div>
@@ -290,14 +320,22 @@ export function InventoryList({
                   {[auto.ciudad, auto.estado].filter(Boolean).join(', ') || 'Sin ubicación'}
                 </span>
               </div>
+              <div className="stack-sm" style={{ gap: 4 }}>
+                <span className="muted">Ingreso: {formatEntryDate(auto.created_at)}</span>
+                <span className="muted">
+                  {weeksInInventory(auto.created_at) === null
+                    ? 'Sin antigüedad disponible'
+                    : `${weeksInInventory(auto.created_at)} semana(s) en inventario`}
+                </span>
+              </div>
               <div className="inventory-actions">
-                {canEdit ? (
+                {canEdit && !isPlaceholderAuto(auto) ? (
                   <button className="btn-soft" onClick={() => startEdit(auto)} type="button">
                     <Pencil size={16} />
                     Editar specs
                   </button>
                 ) : null}
-                {canEdit ? (
+                {canEdit && !isPlaceholderAuto(auto) ? (
                   <button
                     className="btn-soft"
                     onClick={() =>
@@ -312,14 +350,14 @@ export function InventoryList({
                     <ChevronDown size={16} />
                   </button>
                 ) : null}
-                {canDelete ? (
+                {canDelete && !isPlaceholderAuto(auto) ? (
                   <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
                     <Trash2 size={16} />
                     Eliminar
                   </button>
                 ) : null}
               </div>
-              {canEdit && statusMenuId === auto.id ? (
+              {canEdit && !isPlaceholderAuto(auto) && statusMenuId === auto.id ? (
                 <div className="inventory-actions">
                   {statusOptions.map((status) => (
                     <button
@@ -334,7 +372,7 @@ export function InventoryList({
                   ))}
                 </div>
               ) : null}
-              {canEdit && editingId === auto.id && draft ? (
+              {canEdit && !isPlaceholderAuto(auto) && editingId === auto.id && draft ? (
                 <div className="panel-card stack-md">
                   <div>
                     <strong>Editar tarjeta y specs</strong>

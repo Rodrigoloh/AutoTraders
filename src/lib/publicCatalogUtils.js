@@ -162,6 +162,7 @@ export function expandDemoAutos(autos, targetCount = 6) {
     },
     combustible: 'Gasolina',
     transmision: 'Automática',
+    created_at: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
     descripcion:
       'Unidad demo generada para poblar la vitrina visual del lote y mostrar la experiencia completa.',
   };
@@ -175,6 +176,7 @@ export function expandDemoAutos(autos, targetCount = 6) {
       ...baseAuto,
       ...seed,
       id: `${baseAuto.id}-demo-${index + 1}`,
+      created_at: new Date(Date.now() - (index + 1) * 7 * 24 * 60 * 60 * 1000).toISOString(),
       marca: index % 2 === 0 ? 'BMW' : index % 3 === 0 ? 'Mercedes-Benz' : 'Audi',
       anio: (seed.anio ?? baseAuto.anio ?? 2021) - (index % 3),
       moneda: baseAuto.moneda ?? 'MXN',

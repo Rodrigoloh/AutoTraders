@@ -9,6 +9,7 @@ import { KpiSummary } from '../components/KpiSummary';
 import { KpiChart } from '../components/KpiChart';
 import { BrandLogo } from '../components/BrandLogo.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
+import { expandDemoAutos } from '../lib/publicCatalogUtils.js';
 
 function formatCompact(number) {
   return new Intl.NumberFormat('es-MX', {
@@ -43,6 +44,36 @@ function buildInventoryAging(autos) {
     { label: '4 semanas', autos: countOlderThan(28) },
     { label: '8 semanas', autos: countOlderThan(56) },
   ];
+}
+
+function normalizeMetrics(metrics) {
+  const byDate = new Map();
+
+  for (let index = 6; index >= 0; index -= 1) {
+    const date = new Date();
+    date.setDate(date.getDate() - index);
+    const isoDate = date.toISOString().slice(0, 10);
+
+    byDate.set(isoDate, {
+      date: isoDate,
+      label: date.toLocaleDateString('es-MX', { weekday: 'short' }),
+      visitas: 0,
+      whatsapp: 0,
+    });
+  }
+
+  metrics.forEach((row) => {
+    const bucket = byDate.get(row.fecha);
+
+    if (!bucket) {
+      return;
+    }
+
+    bucket.visitas += Number(row.vistas_totales ?? 0);
+    bucket.whatsapp += Number(row.interesados_whatsapp ?? 0);
+  });
+
+  return Array.from(byDate.values());
 }
 
 export function AdminDashboardPage() {
@@ -100,6 +131,8 @@ export function AdminDashboardPage() {
     loadDashboard();
   }, [tenant?.id]);
 
+  const dashboardAutos = useMemo(() => expandDemoAutos(autos, 6), [autos]);
+
   const summary = useMemo(() => {
     const totalViews = metrics.reduce((sum, row) => sum + Number(row.vistas_totales ?? 0), 0);
     const totalWhatsapp = metrics.reduce(
@@ -112,9 +145,10 @@ export function AdminDashboardPage() {
       totalViews,
       totalWhatsapp,
       conversion,
-      inventoryAging: buildInventoryAging(autos),
+      inventoryAging: buildInventoryAging(dashboardAutos),
+      activityChart: normalizeMetrics(metrics),
     };
-  }, [autos, metrics]);
+  }, [dashboardAutos, metrics]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -128,8 +162,8 @@ export function AdminDashboardPage() {
   };
 
   const canManageInventory = ['lote_admin', 'lote_editor', 'super_admin'].includes(sessionRole);
-  const publishedAutos = autos.filter((auto) => auto.estatus === 'disponible').length;
-  const soldAutos = autos.filter((auto) => auto.estatus === 'vendido').length;
+  const publishedAutos = dashboardAutos.filter((auto) => auto.estatus === 'disponible').length;
+  const soldAutos = dashboardAutos.filter((auto) => auto.estatus === 'vendido').length;
 
   return (
     <>
@@ -180,7 +214,7 @@ export function AdminDashboardPage() {
               helpText="Todas las unidades dadas de alta en el lote."
               title="Inventario Total"
               type="inventory"
-              value={formatCompact(autos.length)}
+              value={formatCompact(dashboardAutos.length)}
             />
             <KpiSummary
               helpText="Autos visibles hoy para cualquier visitante del sitio."
@@ -215,24 +249,17 @@ export function AdminDashboardPage() {
           </section>
 
           <section className="dashboard-grid admin-insight-grid">
-            <KpiChart data={summary.inventoryAging} />
-            <div className="panel-card stack-md admin-code-card">
-              <h2 className="heading-md">Edición del sitio fuera del dashboard</h2>
-              <p className="muted">
-                La gestión de usuarios queda fuera de este panel. Los textos del sitio y logos
-                públicos se editan directamente en código.
-              </p>
-              <div className="stack-sm">
-                <div className="muted">
-                  Textos públicos: <code>src/lib/demoCatalogContent.js</code>
-                </div>
-                <div className="muted">
-                  Logos públicos: <code>public/branding/demo-lote/logo-light.svg</code> y{' '}
-                  <code>public/branding/demo-lote/logo-dark.svg</code>
-                </div>
-              </div>
-              <div className="status-pill">{isLoading ? 'Sincronizando...' : 'Datos al día'}</div>
-            </div>
+            <KpiChart
+              data={summary.inventoryAging}
+              subtitle="Unidades visibles en el dashboard que llevan al menos 1, 2, 4 y 8 semanas dentro del lote."
+              title="Tiempo de inventario"
+            />
+            <KpiChart
+              data={summary.activityChart}
+              subtitle="Comparativo entre vistas de detalle e interesados por WhatsApp en los últimos 7 días."
+              title="Actividad últimos 7 días"
+              variant="line"
+            />
           </section>
 
           <section className="panel-card stack-md">
@@ -257,7 +284,7 @@ export function AdminDashboardPage() {
           </section>
 
           <InventoryList
-            autos={autos}
+            autos={dashboardAutos}
             canEdit={canManageInventory}
             canManageImages={canManageInventory}
             loteId={tenant?.id}
