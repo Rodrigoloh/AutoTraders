@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { CarDetail } from '../components/CarDetail.jsx';
+import { BuyerLeadCapture } from '../components/BuyerLeadCapture.jsx';
 import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
@@ -12,6 +13,7 @@ import {
   usePublicInventory,
 } from '../lib/publicCatalogUtils.js';
 import { recordMetric } from '../lib/metrics';
+import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
 function normalizeBudgetValue(value, fallback = '') {
@@ -32,6 +34,7 @@ export function InventoryPage() {
     includeDemoAutos: slug === 'demo-lote-norte',
   });
   const [selectedAutoId, setSelectedAutoId] = useState(autoId ?? null);
+  const [leadIntent, setLeadIntent] = useState('');
   const inventoryAnchorRef = useRef(null);
   const recordedDetailIdRef = useRef('');
   const [filters, setFilters] = useState({
@@ -42,6 +45,7 @@ export function InventoryPage() {
     modelQuery: '',
   });
   const deferredFilters = useDeferredValue(filters);
+  const searchReadyRef = useRef(false);
 
   useEffect(() => {
     setFilters((current) => ({
@@ -78,6 +82,23 @@ export function InventoryPage() {
     });
   }, [autos, deferredFilters]);
 
+  useEffect(() => {
+    if (!tenant?.id) return;
+    if (!searchReadyRef.current) {
+      searchReadyRef.current = true;
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void supabase.rpc('record_catalog_search', {
+        p_lote_id: tenant.id,
+        p_canal: 'web',
+      });
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [deferredFilters, tenant?.id]);
+
   const selectedAuto =
     autos.find((auto) => auto.id === selectedAutoId) ??
     null;
@@ -110,11 +131,6 @@ export function InventoryPage() {
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
   const logoSrc = demoCatalogContent.logos.header;
-  const whatsappNumber = (
-    slug === 'demo-lote-norte'
-      ? demoCatalogContent.footer.whatsapp
-      : tenant?.whatsapp ?? demoCatalogContent.footer.whatsapp
-  ).replace(/\D/g, '');
   const heroImage = demoCatalogContent.heroImage;
 
   const handleFilterChange = (event) => {
@@ -128,25 +144,6 @@ export function InventoryPage() {
             ? normalizeBudgetValue(value, '0')
             : value,
     }));
-  };
-
-  const openWhatsappIntent = (auto, intent) => {
-    const messages = {
-      reserva: `Hola ${brandName}, quiero reservar el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
-      prueba: `Hola ${brandName}, quiero agendar una prueba para el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
-      contacto: `Hola ${brandName}, quiero más información sobre el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
-    };
-
-    if (whatsappNumber) {
-      const text = encodeURIComponent(messages[intent] ?? messages.contacto);
-      window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
-    }
-
-    void recordMetric({
-      autoId: auto.id,
-      loteId: tenant?.id,
-      eventType: 'click_whatsapp',
-    });
   };
 
   const handleSelectAuto = (auto) => {
@@ -209,9 +206,18 @@ export function InventoryPage() {
           <CarDetail
             auto={selectedAuto}
             onBack={handleBackToInventory}
-            onContact={(auto) => openWhatsappIntent(auto, 'contacto')}
-            onReserve={(auto) => openWhatsappIntent(auto, 'reserva')}
-            onTestDrive={(auto) => openWhatsappIntent(auto, 'prueba')}
+            onContact={() => setLeadIntent('contact')}
+            onReserve={() => setLeadIntent('reserve')}
+            onTestDrive={() => setLeadIntent('test_drive')}
+          />
+        ) : null}
+
+        {selectedAuto && leadIntent ? (
+          <BuyerLeadCapture
+            auto={selectedAuto}
+            intent={leadIntent}
+            loteId={tenant?.id}
+            onClose={() => setLeadIntent('')}
           />
         ) : null}
 

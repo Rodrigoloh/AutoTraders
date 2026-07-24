@@ -415,3 +415,6 @@ enabled = true
 
 [functions.create-sale-lead]
 verify_jwt = false
+
+[functions.create-buyer-lead]
+verify_jwt = false

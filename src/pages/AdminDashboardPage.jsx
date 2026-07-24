@@ -6,11 +6,12 @@ import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
 import { InventoryList } from '../components/InventoryList';
 import { SaleLeadManager } from '../components/SaleLeadManager.jsx';
+import { BuyerLeadManager } from '../components/BuyerLeadManager.jsx';
+import { StaffManager } from '../components/StaffManager.jsx';
 import { KpiSummary } from '../components/KpiSummary';
 import { KpiChart } from '../components/KpiChart';
 import { BrandLogo } from '../components/BrandLogo.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
-import { expandDemoAutos } from '../lib/publicCatalogUtils.js';
 
 function formatCompact(number) {
   return new Intl.NumberFormat('es-MX', {
@@ -19,9 +20,9 @@ function formatCompact(number) {
   }).format(Number(number ?? 0));
 }
 
-function getLast7DaysRange() {
+function getLast90DaysRange() {
   const date = new Date();
-  date.setDate(date.getDate() - 6);
+  date.setDate(date.getDate() - 89);
   return date.toISOString().slice(0, 10);
 }
 
@@ -50,14 +51,14 @@ function buildInventoryAging(autos) {
 function normalizeMetrics(metrics) {
   const byDate = new Map();
 
-  for (let index = 6; index >= 0; index -= 1) {
+  for (let index = 89; index >= 0; index -= 1) {
     const date = new Date();
     date.setDate(date.getDate() - index);
     const isoDate = date.toISOString().slice(0, 10);
 
     byDate.set(isoDate, {
       date: isoDate,
-      label: date.toLocaleDateString('es-MX', { weekday: 'short' }),
+      label: date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }),
       visitas: 0,
       whatsapp: 0,
     });
@@ -120,6 +121,9 @@ export function AdminDashboardPage() {
   const [autos, setAutos] = useState([]);
   const [metrics, setMetrics] = useState([]);
   const [saleLeads, setSaleLeads] = useState([]);
+  const [buyerLeads, setBuyerLeads] = useState([]);
+  const [searchMetrics, setSearchMetrics] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState('');
   const [sessionRole, setSessionRole] = useState('');
   const [staffOptions, setStaffOptions] = useState([]);
   const [feedback, setFeedback] = useState('');
@@ -141,13 +145,15 @@ export function AdminDashboardPage() {
       { data: autosData },
       { data: metricsData },
       { data: saleLeadsData },
+      { data: buyerLeadsData },
+      { data: searchData },
       { data: ownMembership },
     ] =
       await Promise.all([
         supabase
           .from('inventario')
           .select(
-            'id, assigned_staff_id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, destacado, imagenes, meta_tags, created_at',
+            'id, assigned_staff_id, advisor_name, advisor_phone, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, destacado, imagenes, meta_tags, created_at',
           )
           .eq('lote_id', tenant.id)
           .order('created_at', { ascending: false }),
@@ -155,12 +161,21 @@ export function AdminDashboardPage() {
           .from('metricas')
           .select('fecha, vistas_totales, interesados_whatsapp')
           .eq('lote_id', tenant.id)
-          .gte('fecha', getLast7DaysRange())
+          .gte('fecha', getLast90DaysRange())
           .order('fecha', { ascending: true }),
         supabase
           .from('sale_leads')
           .select('id, status')
           .eq('lote_id', tenant.id),
+        supabase
+          .from('buyer_leads')
+          .select('id, status')
+          .eq('lote_id', tenant.id),
+        supabase
+          .from('catalog_search_metrics')
+          .select('fecha, searches')
+          .eq('lote_id', tenant.id)
+          .gte('fecha', getLast90DaysRange()),
         session?.user.app_metadata?.platform_role === 'super_admin'
           ? Promise.resolve({ data: { role: 'super_admin' } })
           : supabase
@@ -185,6 +200,9 @@ export function AdminDashboardPage() {
     setAutos(autosData ?? []);
     setMetrics(metricsData ?? []);
     setSaleLeads(saleLeadsData ?? []);
+    setBuyerLeads(buyerLeadsData ?? []);
+    setSearchMetrics(searchData ?? []);
+    setCurrentUserId(session?.user.id ?? '');
     setSessionRole(resolvedRole);
     setStaffOptions(availableStaff);
     setIsLoading(false);
@@ -195,13 +213,7 @@ export function AdminDashboardPage() {
   }, [tenant?.id]);
 
   const hasGlobalLoteScope = ['lote_admin', 'super_admin'].includes(sessionRole);
-  const dashboardAutos = useMemo(() => {
-    if (slug === 'demo-lote-norte' && hasGlobalLoteScope) {
-      return applyDemoDashboardTimeline(expandDemoAutos(autos, 12), slug);
-    }
-
-    return autos;
-  }, [autos, hasGlobalLoteScope, slug]);
+  const dashboardAutos = autos;
 
   const summary = useMemo(() => {
     const totalViews = metrics.reduce((sum, row) => sum + Number(row.vistas_totales ?? 0), 0);
@@ -217,10 +229,12 @@ export function AdminDashboardPage() {
       conversion,
       saleLeadTotal: saleLeads.length,
       saleLeadWon: saleLeads.filter((lead) => lead.status === 'won').length,
+      buyerLeadTotal: buyerLeads.length,
+      searches: searchMetrics.reduce((sum, row) => sum + Number(row.searches ?? 0), 0),
       inventoryAging: buildInventoryAging(dashboardAutos),
       activityChart: normalizeMetrics(metrics),
     };
-  }, [dashboardAutos, metrics, saleLeads]);
+  }, [buyerLeads, dashboardAutos, metrics, saleLeads, searchMetrics]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -301,7 +315,7 @@ export function AdminDashboardPage() {
               value={formatCompact(publishedAutos)}
             />
             <KpiSummary
-              helpText="Visitas acumuladas a fichas durante la última semana."
+              helpText="Visitas acumuladas a fichas durante los últimos 90 días."
               title="Vistas"
               type="views"
               value={formatCompact(summary.totalViews)}
@@ -325,6 +339,18 @@ export function AdminDashboardPage() {
               value={formatCompact(soldAutos)}
             />
             <KpiSummary
+              helpText="Cambios de filtros y búsquedas acumulados durante los últimos 90 días."
+              title="Búsquedas"
+              type="views"
+              value={formatCompact(summary.searches)}
+            />
+            <KpiSummary
+              helpText="Personas que dejaron sus datos y abrieron WhatsApp desde una unidad."
+              title="Interesados"
+              type="whatsapp"
+              value={formatCompact(summary.buyerLeadTotal)}
+            />
+            <KpiSummary
               helpText={isLoteAdmin ? 'Solicitudes totales recibidas por el lote.' : 'Solicitudes que tienes asignadas.'}
               title="Leads de venta"
               type="whatsapp"
@@ -346,8 +372,8 @@ export function AdminDashboardPage() {
             />
             <KpiChart
               data={summary.activityChart}
-              subtitle="Comparativo entre vistas de detalle e interesados por WhatsApp en los últimos 7 días."
-              title="Actividad últimos 7 días"
+              subtitle="Comparativo entre vistas de detalle e interesados por WhatsApp en los últimos 90 días."
+              title="Actividad últimos 90 días"
               variant="line"
             />
           </section>
@@ -369,7 +395,7 @@ export function AdminDashboardPage() {
             </div>
             {feedback ? <div className="muted">{feedback}</div> : null}
             {isCreateOpen && isLoteAdmin ? (
-              <InventoryForm loteId={tenant?.id} onCreated={handleCreated} />
+              <InventoryForm loteId={tenant?.id} onCreated={handleCreated} staffOptions={staffOptions} />
             ) : null}
           </section>
 
@@ -379,10 +405,18 @@ export function AdminDashboardPage() {
             canEdit={canManageInventory}
             canFeature={isLoteAdmin}
             canManageImages={canManageInventory}
+            currentUserId={currentUserId}
+            isAdmin={isLoteAdmin}
             loteId={tenant?.id}
             onRefresh={loadDashboard}
             staffOptions={staffOptions}
           />
+
+          {isLoteAdmin ? (
+            <StaffManager loteId={tenant?.id} onChanged={loadDashboard} staff={staffOptions} />
+          ) : null}
+
+          <BuyerLeadManager loteId={tenant?.id} />
 
           <SaleLeadManager
             isAdmin={isLoteAdmin}

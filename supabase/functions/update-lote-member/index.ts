@@ -12,8 +12,10 @@ const adminClient = createClient(supabaseUrl, serviceRoleKey, {
 type UpdatePayload = {
   loteId: string;
   userId: string;
-  action: 'change_role' | 'remove_access';
+  action: 'change_role' | 'remove_access' | 'update_profile';
   role?: 'lote_admin' | 'lote_staff' | 'lote_editor' | 'lote_viewer';
+  fullName?: string;
+  phone?: string;
 };
 
 async function authenticateRequest(req: Request, loteId: string) {
@@ -98,6 +100,32 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ status: 'removed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (payload.action === 'update_profile') {
+      const fullName = payload.fullName?.trim() || null;
+      const phone = payload.phone?.trim() || null;
+      const { error } = await adminClient
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          phone,
+        })
+        .eq('id', payload.userId);
+
+      if (error) throw error;
+
+      const { error: inventoryError } = await adminClient
+        .from('inventario')
+        .update({ advisor_name: fullName, advisor_phone: phone })
+        .eq('lote_id', payload.loteId)
+        .eq('assigned_staff_id', payload.userId);
+
+      if (inventoryError) throw inventoryError;
+
+      return new Response(JSON.stringify({ status: 'profile_updated' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

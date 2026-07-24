@@ -14,6 +14,7 @@ type InvitePayload = {
   email: string;
   role: 'lote_admin' | 'lote_staff' | 'lote_editor' | 'lote_viewer';
   fullName?: string;
+  phone?: string;
   redirectTo?: string;
 };
 
@@ -99,6 +100,19 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingProfile?.id) {
+      const profileUpdates = {
+        ...(payload.fullName?.trim() ? { full_name: payload.fullName.trim() } : {}),
+        ...(payload.phone?.trim() ? { phone: payload.phone.trim() } : {}),
+      };
+
+      if (Object.keys(profileUpdates).length) {
+        const { error: profileError } = await adminClient
+          .from('profiles')
+          .update(profileUpdates)
+          .eq('id', existingProfile.id);
+        if (profileError) throw profileError;
+      }
+
       const { error: upsertError } = await adminClient.from('lote_usuarios').upsert(
         {
           lote_id: payload.loteId,
@@ -132,6 +146,7 @@ serve(async (req) => {
         redirectTo,
         data: {
           full_name: payload.fullName ?? null,
+          phone: payload.phone ?? null,
           lote_id: payload.loteId,
           lote_nombre: lote?.nombre ?? null,
           invited_role: payload.role,
@@ -154,6 +169,17 @@ serve(async (req) => {
 
     if (membershipError) {
       throw membershipError;
+    }
+
+    const { error: profileError } = await adminClient.from('profiles').upsert({
+      id: inviteData.user.id,
+      email,
+      full_name: payload.fullName?.trim() || null,
+      phone: payload.phone?.trim() || null,
+    });
+
+    if (profileError) {
+      throw profileError;
     }
 
     return new Response(

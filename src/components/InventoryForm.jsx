@@ -19,9 +19,10 @@ const initialForm = {
   ciudad: '',
   estado: '',
   descripcion: '',
+  assignedStaffId: '',
 };
 
-export function InventoryForm({ loteId, onCreated }) {
+export function InventoryForm({ loteId, onCreated, staffOptions = [] }) {
   const [form, setForm] = useState(initialForm);
   const [files, setFiles] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -73,10 +74,22 @@ export function InventoryForm({ loteId, onCreated }) {
         imagenes,
       };
 
-      const { error } = await supabase.from('inventario').insert(payload);
+      const { data: createdAuto, error } = await supabase
+        .from('inventario')
+        .insert(payload)
+        .select('id')
+        .single();
 
       if (error) {
         throw error;
+      }
+
+      if (form.assignedStaffId) {
+        const { error: assignmentError } = await supabase.rpc('assign_inventory_staff', {
+          target_inventory_id: createdAuto.id,
+          target_staff_id: form.assignedStaffId,
+        });
+        if (assignmentError) throw assignmentError;
       }
 
       setForm(initialForm);
@@ -225,6 +238,25 @@ export function InventoryForm({ loteId, onCreated }) {
               {fileLabel}
             </span>
           </span>
+        </div>
+        <div className="field" data-span="full">
+          <label htmlFor="assignedStaffId">Asesor responsable</label>
+          <select
+            id="assignedStaffId"
+            name="assignedStaffId"
+            onChange={handleChange}
+            required
+            value={form.assignedStaffId}
+          >
+            <option value="">Selecciona un asesor</option>
+            {staffOptions.map((staff) => (
+              <option key={staff.user_id} value={staff.user_id}>
+                {staff.full_name || staff.email}
+                {staff.phone ? ` · ${staff.phone}` : ''}
+              </option>
+            ))}
+          </select>
+          <span>El nombre y teléfono del asesor quedarán vinculados al vehículo.</span>
         </div>
       </div>
       {errorMessage ? <div className="muted">{errorMessage}</div> : null}

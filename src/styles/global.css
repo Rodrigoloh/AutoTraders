@@ -764,6 +764,36 @@ img {
   gap: 16px;
 }
 
+.team-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.lead-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.lead-modal {
+  width: min(100%, 560px);
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #090909;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
+}
+
+.lead-modal-head {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .lead-photo-strip {
   display: grid;
   grid-auto-flow: column;
@@ -1390,6 +1420,10 @@ img {
   }
 
   .lead-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

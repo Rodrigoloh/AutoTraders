@@ -98,6 +98,8 @@ export function InventoryList({
   canFeature = false,
   canManageImages = false,
   canMarkSold = false,
+  currentUserId = '',
+  isAdmin = false,
   loteId = '',
   onRefresh,
   staffOptions = [],
@@ -335,7 +337,9 @@ export function InventoryList({
         </div>
       ) : null}
       <div className="inventory-grid">
-        {filteredAutos.map((auto) => (
+        {filteredAutos.map((auto) => {
+          const canManipulate = isAdmin || auto.assigned_staff_id === currentUserId;
+          return (
           <article className="inventory-item" key={auto.id}>
             {isPlaceholderAuto(auto) ? (
               <span className="tenant-badge">Demo visual</span>
@@ -372,6 +376,13 @@ export function InventoryList({
                     : `${weeksInInventory(auto.created_at)} semana(s) en inventario`}
                 </span>
               </div>
+              <div className="stack-sm" style={{ gap: 4 }}>
+                <strong>Asesor: {auto.advisor_name || 'Sin asignar'}</strong>
+                {auto.advisor_phone ? <span className="muted">{auto.advisor_phone}</span> : null}
+                {!canManipulate && !isAdmin ? (
+                  <span className="status-pill">Sólo lectura · asignado a otro asesor</span>
+                ) : null}
+              </div>
               {canAssignStaff && !isPlaceholderAuto(auto) ? (
                 <div className="field">
                   <label htmlFor={`inventory-staff-${auto.id}`}>Staff responsable</label>
@@ -407,13 +418,13 @@ export function InventoryList({
                         : 'Destacar en home'}
                   </button>
                 ) : null}
-                {canEdit && !isPlaceholderAuto(auto) ? (
+                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
                   <button className="btn-soft" onClick={() => startEdit(auto)} type="button">
                     <Pencil size={16} />
                     Editar specs
                   </button>
                 ) : null}
-                {canEdit && !isPlaceholderAuto(auto) ? (
+                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
                   <button
                     className="btn-soft"
                     onClick={() =>
@@ -435,7 +446,7 @@ export function InventoryList({
                   </button>
                 ) : null}
               </div>
-              {canEdit && !isPlaceholderAuto(auto) && statusMenuId === auto.id ? (
+              {canEdit && canManipulate && !isPlaceholderAuto(auto) && statusMenuId === auto.id ? (
                 <div className="inventory-actions">
                   {statusOptions.map((status) => (
                     <button
@@ -450,7 +461,7 @@ export function InventoryList({
                   ))}
                 </div>
               ) : null}
-              {canEdit && !isPlaceholderAuto(auto) && editingId === auto.id && draft ? (
+              {canEdit && canManipulate && !isPlaceholderAuto(auto) && editingId === auto.id && draft ? (
                 <div className="panel-card stack-md">
                   <div>
                     <strong>Editar tarjeta y specs</strong>
@@ -602,7 +613,8 @@ export function InventoryList({
               ) : null}
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

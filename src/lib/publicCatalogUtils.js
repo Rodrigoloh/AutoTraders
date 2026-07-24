@@ -411,7 +411,7 @@ export function usePublicInventory(tenantId, { includeDemoAutos = false } = {}) 
         supabase
           .from('inventario')
           .select(
-            'id, lote_id, marca, modelo, anio, version, precio, moneda, kilometraje, ciudad, estado, estatus, destacado, imagenes, meta_tags, combustible, transmision, descripcion, created_at',
+            'id, lote_id, assigned_staff_id, advisor_name, advisor_phone, marca, modelo, anio, version, precio, moneda, kilometraje, ciudad, estado, estatus, destacado, imagenes, meta_tags, combustible, transmision, descripcion, created_at',
           )
           .eq('lote_id', tenantId)
           .eq('estatus', 'disponible')

@@ -1,5 +1,8 @@
 -- Orden público de inventario: selección editorial del admin y rendimiento agregado.
 
+alter table public.inventario
+  add column if not exists destacado boolean not null default false;
+
 create index if not exists idx_inventario_lote_destacado
 on public.inventario(lote_id, destacado desc, created_at desc);
 
@@ -23,9 +26,8 @@ as $$
     coalesce(
       sum(
         coalesce(m.vistas_totales, 0)
-        + coalesce(m.visitas_detalle, 0) * 3
         + coalesce(m.clics, 0) * 2
-        + coalesce(m.mensajes_whatsapp, 0) * 5
+        + coalesce(m.interesados_whatsapp, 0) * 5
       ),
       0
     )::bigint as popularity_score
