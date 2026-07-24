@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { CarFront, LayoutDashboard, LogOut, MessageCircleMore, Plus, UsersRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
@@ -441,10 +442,15 @@ export function AdminDashboardPage() {
           </div>
         </div>
         <footer className="admin-footer">
-          <span>
-            © {new Date().getFullYear()} {tenant?.nombre ?? demoCatalogContent.brand.wordmark}
-          </span>
-          <span>Dashboard administrativo</span>
+          <div className="admin-footer-brand">
+            <strong>{tenant?.nombre ?? demoCatalogContent.brand.wordmark}</strong>
+            <span>© {new Date().getFullYear()} · Dashboard administrativo</span>
+          </div>
+          <nav aria-label="Información legal" className="admin-footer-nav">
+            <Link to={`/${slug}/aviso-de-privacidad`}>Privacidad</Link>
+            <Link to={`/${slug}/terminos`}>Términos</Link>
+            <Link to={`/${slug}/cookies`}>Cookies</Link>
+          </nav>
           <a href="https://www.cobalto.blue" rel="noreferrer" target="_blank">
             Tecnología por cobalto.blue
           </a>

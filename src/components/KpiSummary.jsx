@@ -14,7 +14,7 @@ export function KpiSummary({ title, value, type, helpText }) {
     <article
       aria-label={`${title}: ${value}. ${helpText}`}
       className="metric-card"
-      tabIndex="0"
+      tabIndex={0}
     >
       <div className="metric-topline">
         <span className="metric-icon-shell">
