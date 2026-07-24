@@ -3,8 +3,7 @@ import { supabase } from './supabaseClient';
 import { demoCatalogContent } from './demoCatalogContent.js';
 
 function commonsImage(filePath) {
-  const fileName = filePath.split('/').at(-1);
-  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${filePath}/1600px-${fileName}`;
+  return `https://upload.wikimedia.org/wikipedia/commons/${filePath}`;
 }
 
 function galleryKey(marca, modelo) {
