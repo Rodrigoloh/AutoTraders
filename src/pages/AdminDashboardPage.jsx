@@ -260,7 +260,7 @@ export function AdminDashboardPage() {
   return (
     <>
       <Helmet>
-        <title>{tenant?.nombre ?? 'Lote'} | Dashboard</title>
+        <title>{tenant?.nombre ?? 'Lote'} | Dashboard administrativo</title>
       </Helmet>
       <main className="app-shell">
         <div className="container stack-lg">
@@ -289,8 +289,8 @@ export function AdminDashboardPage() {
               </div>
             </div>
             <div className="hero-copy stack-md">
-              <span className="catalog-eyebrow">Resumen del lote</span>
-              <h1 className="heading-lg">Inventario, equipo y oportunidades en un solo lugar</h1>
+              <span className="catalog-eyebrow">Centro de operación</span>
+              <h1 className="heading-lg">Dashboard administrativo</h1>
               <p className="muted">
                 Consulta el rendimiento de los últimos 90 días y atiende las unidades y leads
                 dentro de tu alcance.
@@ -304,13 +304,12 @@ export function AdminDashboardPage() {
             </nav>
           </section>
 
-          <section className="dashboard-section stack-md" id="metricas">
+          <section className="dashboard-section dashboard-pulse stack-md" id="metricas">
             <div className="dashboard-section-heading">
               <div>
                 <span className="catalog-eyebrow">Últimos 90 días</span>
                 <h2 className="heading-md">Pulso comercial</h2>
               </div>
-              <p className="muted">Indicadores del inventario visible dentro de tu nivel de acceso.</p>
             </div>
             <div className="kpi-grid admin-kpi-grid">
             <KpiSummary
@@ -441,6 +440,15 @@ export function AdminDashboardPage() {
             />
           </div>
         </div>
+        <footer className="admin-footer">
+          <span>
+            © {new Date().getFullYear()} {tenant?.nombre ?? demoCatalogContent.brand.wordmark}
+          </span>
+          <span>Dashboard administrativo</span>
+          <a href="https://www.cobalto.blue" rel="noreferrer" target="_blank">
+            Tecnología por cobalto.blue
+          </a>
+        </footer>
       </main>
     </>
   );
