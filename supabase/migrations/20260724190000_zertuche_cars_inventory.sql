@@ -19,15 +19,13 @@ where lote_id = (
 );
 
 insert into public.inventario (
-  id, lote_id, sku, marca, modelo, anio, version, precio, moneda,
+  id, lote_id, marca, modelo, anio, version, precio, moneda,
   kilometraje, combustible, transmision, descripcion, ciudad, estado,
-  estatus, destacado, imagenes, meta_tags, publicado_en_facebook,
-  whatsapp_activo, published_at
+  estatus, destacado, imagenes, meta_tags
 )
 select
   seed.id,
   lote.id,
-  seed.sku,
   seed.marca,
   seed.modelo,
   seed.anio,
@@ -51,10 +49,7 @@ select
   seed.meta_tags || jsonb_build_object(
     'source', 'Zertuche Cars en Facebook',
     'source_url', seed.source_url
-  ),
-  true,
-  true,
-  timezone('utc', now()) - seed.age
+  )
 from public.lotes lote
 cross join (
   values
