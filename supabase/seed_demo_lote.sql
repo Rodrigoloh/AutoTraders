@@ -33,7 +33,7 @@ begin
     'demo.autosnorte.mx',
     '8181234567',
     '528181234567',
-    'ventas@autosnortedemo.mx',
+    'hey@cobalto.blue',
     'autos-norte-demo',
     true,
     jsonb_build_object(

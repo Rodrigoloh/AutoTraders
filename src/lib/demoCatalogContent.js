@@ -86,7 +86,7 @@ export const demoCatalogContent = {
     address: 'Av. Constitución S/N (Frente a la Macroplaza), Monterrey, N.L.',
     phone: '+52 81 1814 2655',
     whatsapp: '+528118142655',
-    email: 'contacto@autosdelnorte.mx',
+    email: 'hey@cobalto.blue',
     hours: 'Lun a Sab · 9:30 a 19:00',
     blurb:
       'Atención directa para citas, recorridos en video, apartados, consignación y seguimiento comercial desde Monterrey.',
