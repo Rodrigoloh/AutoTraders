@@ -2,34 +2,111 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabaseClient';
 import { demoCatalogContent } from './demoCatalogContent.js';
 
-function buildDemoGallery(photoUrl) {
-  const separator = photoUrl.includes('?') ? '&' : '?';
-  const baseUrl = photoUrl.replace(/([?&])w=\d+/g, '$1w=1600');
-
-  return [
-    `${baseUrl}${separator}gallery=front`,
-    `${baseUrl}${separator}gallery=side&fit=crop&crop=entropy`,
-    `${baseUrl}${separator}gallery=rear&fit=crop&crop=center`,
-    `${baseUrl}${separator}gallery=detail&fit=crop&crop=faces`,
-  ];
+function commonsImage(filePath) {
+  const fileName = filePath.split('/').at(-1);
+  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${filePath}/1600px-${fileName}`;
 }
 
-function ensureMinimumGallery(auto, minimum = 4) {
+function galleryKey(marca, modelo) {
+  return `${marca ?? ''} ${modelo ?? ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+const demoModelGalleries = {
+  'mazda cx-5': [
+    'f/f8/Mazda_CX-5_%28KF%29_Facelift_1X7A0331_%282%29.jpg',
+    'e/ec/2022_Mazda_CX-5_2.0_front.jpg',
+    'f/f5/2022_Mazda_CX-5_2.0_back.jpg',
+    '8/8e/2022_Mazda_CX-5_Preferred_%28facelift%29%2C_rear_6.21.22.jpg',
+  ],
+  'ford ranger': [
+    'c/c1/2020_Ford_Ranger_Wildtrak_second_facelift_front.jpg',
+    '1/16/2020_Ford_Ranger_Wildtrak_second_facelift_rear.jpg',
+    'd/d5/20200526_Ford_Ranger_XLT.jpg',
+    'd/de/2020_Ford_Ranger_Raptor_Front.jpg',
+  ],
+  'bmw m2 competition': [
+    'f/f2/BMW_M2_at_the_2025_Adelaide_Grand_Final_Parade.jpg',
+    '6/6f/BMW_M2_CS_%28G87%29_DSC_9730.jpg',
+    '4/42/BMW_M2_CS_%28G87%29_DSC_9723.jpg',
+    'e/ed/BMW_G87_M2_1X7A6997.jpg',
+  ],
+  'audi rs5 sportback': [
+    '9/9f/Audi_RS5_Sportback_5F_FL_IMG_8131.jpg',
+    '8/8f/Audi_RS5%2C_Binz_%28P1090702%29.jpg',
+    'f/f1/Audi_RS5_Coup%C3%A9_8T_IMG_3030_%28cropped%29.jpg',
+    'a/a1/Abt_Sportsline%2C_GIMS_2018%2C_Le_Grand-Saconnex_%281X7A1459%29.jpg',
+  ],
+  'mercedes-benz glb 250': [
+    '3/38/Mercedes-AMG_GLB_35_4MATIC_%28X247%29_%282023%29_IMG_9649.jpg',
+    '0/02/Mercedes-AMG_GLB_35_4MATIC_%28X247%29_%282023%29_IMG_9652.jpg',
+    '8/88/MERCEDES-BENZ_GLB_China_%283%29.jpg',
+    '2/2b/MERCEDES-BENZ_GLB_China.jpg',
+  ],
+  'ford mustang gt': [
+    '5/5d/2018_Ford_Mustang_GT_5.0_Front.jpg',
+    'b/b5/2018_Ford_Mustang_GT_5.0_Rear.jpg',
+    '7/72/2024_Ford_Mustang_GT%2C_Kingsville%2C_Ontario%2C_2025-06-29.jpg',
+    '4/44/Kissingen_Ford_GT_5.0_Mustang_0417RM0283.jpg',
+  ],
+  'porsche 911 carrera': [
+    'b/b8/Porsche_992_Carrera_S_coupe_IMG_5838.jpg',
+    '3/38/Porsche_992_Carrera_S_coupe_IMG_5832.jpg',
+    '7/7e/Porsche_992_Carrera_S_coupe_IMG_5847.jpg',
+    'c/c5/Porsche_992_Carrera_S_coupe_IMG_5843.jpg',
+  ],
+  'lamborghini huracan': [
+    'a/ac/Lamborghini_Huracan_Performante%2C_IAA_2017%2C_Frankfurt_%281Y7A2827%29.jpg',
+    '6/61/Lamborghini_Hurac%C3%A1n_Tecnica_1X7A7430.jpg',
+    '3/3e/Lamborghini_Hurac%C3%A1n_Tecnica_1X7A7432.jpg',
+    '6/68/Lamborghini_Huracan_STO_1X7A0297.jpg',
+  ],
+  'bmw x5 m': [
+    '4/4e/BMW_X5_M_%28G05%29_1X7A7047.jpg',
+    '3/31/BMW_X5_M_%2873885%29.jpg',
+    '2/2b/BMW_X5_M_%28F15%29_China.jpg',
+    '4/4b/BMW_X5_M_%28F15%29_China_%282%29.jpg',
+  ],
+  'audi q8': [
+    '3/30/Audi_Q8%2C_Paris_Motor_Show_2018%2C_Paris_%281Y7A1776%29.jpg',
+    '2/22/Audi_Q8_1X7A6004.jpg',
+    'e/e8/Audi_Q8_Facelift_DSC_7380.jpg',
+    'f/ff/Audi_Q8_Facelift_DSC_7381.jpg',
+  ],
+  'chevrolet corvette': [
+    '4/4b/Chevrolet_Corvette_C8_IAA_2021_1X7A0156.jpg',
+    '3/33/Chevrolet_Corvette_C8_IMG_8837.jpg',
+    '2/2a/Prichsenstadt_Chevrolet_Corvette_C8-20230423-RM-164415.jpg',
+    '1/17/Chevrolet_Corvette_C8_IMG_2537.jpg',
+  ],
+  'mercedes-benz amg gt': [
+    '5/57/Mercedes-AMG_C192_1X7A0832.jpg',
+    'f/fe/Mercedes-AMG_GT_63_S_%28Facelift%29_1X7A7353.jpg',
+    '5/5a/Mercedes-AMG_GT_Black_Series_IMG_0324.jpg',
+    'e/e5/Mercedes-AMG_GT_Black_Series_IMG_0331.jpg',
+  ],
+};
+
+Object.keys(demoModelGalleries).forEach((key) => {
+  demoModelGalleries[key] = demoModelGalleries[key].map(commonsImage);
+});
+
+function modelGallery(marca, modelo) {
+  return demoModelGalleries[galleryKey(marca, modelo)] ?? [];
+}
+
+function ensureMinimumGallery(auto) {
+  const curatedGallery = modelGallery(auto?.marca, auto?.modelo);
+
+  if (curatedGallery.length) {
+    return { ...auto, imagenes: curatedGallery };
+  }
+
   const images = Array.isArray(auto?.imagenes) ? auto.imagenes.filter(Boolean) : [];
-
-  if (!images.length || images.length >= minimum) {
-    return auto;
-  }
-
-  const completedImages = [...images];
-
-  while (completedImages.length < minimum) {
-    const source = images[completedImages.length % images.length];
-    const separator = source.includes('?') ? '&' : '?';
-    completedImages.push(`${source}${separator}gallery=${completedImages.length + 1}`);
-  }
-
-  return { ...auto, imagenes: completedImages };
+  return { ...auto, imagenes: images };
 }
 
 const demoVehicleSeeds = [
@@ -47,9 +124,7 @@ const demoVehicleSeeds = [
       traccion: 'Trasera',
       asientos: '4',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('BMW', 'M2 Competition'),
   },
   {
     marca: 'Audi',
@@ -65,9 +140,7 @@ const demoVehicleSeeds = [
       traccion: 'Quattro',
       asientos: '5',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Audi', 'RS5 Sportback'),
   },
   {
     marca: 'Mercedes-Benz',
@@ -83,9 +156,7 @@ const demoVehicleSeeds = [
       traccion: 'Integral',
       asientos: '7',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Mercedes-Benz', 'GLB 250'),
   },
   {
     marca: 'Ford',
@@ -101,9 +172,7 @@ const demoVehicleSeeds = [
       traccion: 'Trasera',
       asientos: '4',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1494905998402-395d579af36f?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Ford', 'Mustang GT'),
   },
   {
     marca: 'Porsche',
@@ -119,9 +188,7 @@ const demoVehicleSeeds = [
       traccion: 'Trasera',
       asientos: '4',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Porsche', '911 Carrera'),
   },
   {
     marca: 'Lamborghini',
@@ -137,9 +204,7 @@ const demoVehicleSeeds = [
       traccion: 'Integral',
       asientos: '2',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Lamborghini', 'Huracán'),
   },
   {
     marca: 'BMW',
@@ -155,9 +220,7 @@ const demoVehicleSeeds = [
       traccion: 'Integral',
       asientos: '5',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1556189250-72ba954cfc2b?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('BMW', 'X5 M'),
   },
   {
     marca: 'Audi',
@@ -173,9 +236,7 @@ const demoVehicleSeeds = [
       traccion: 'Quattro',
       asientos: '5',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Audi', 'Q8'),
   },
   {
     marca: 'Chevrolet',
@@ -191,9 +252,7 @@ const demoVehicleSeeds = [
       traccion: 'Trasera',
       asientos: '2',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Chevrolet', 'Corvette'),
   },
   {
     marca: 'Mercedes-Benz',
@@ -209,9 +268,7 @@ const demoVehicleSeeds = [
       traccion: 'Integral',
       asientos: '4',
     },
-    imagenes: buildDemoGallery(
-      'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1400&q=80',
-    ),
+    imagenes: modelGallery('Mercedes-Benz', 'AMG GT'),
   },
 ];
 

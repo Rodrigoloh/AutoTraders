@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { CarDetail } from '../components/CarDetail.jsx';
+import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import {
@@ -77,16 +78,12 @@ export function InventoryPage() {
     });
   }, [autos, deferredFilters]);
 
-  useEffect(() => {
-    if (selectedAutoId && !filteredAutos.some((auto) => auto.id === selectedAutoId)) {
-      setSelectedAutoId(null);
-    }
-  }, [selectedAutoId, filteredAutos]);
-
   const selectedAuto =
-    filteredAutos.find((auto) => auto.id === selectedAutoId) ??
     autos.find((auto) => auto.id === selectedAutoId) ??
     null;
+  const remainingAutos = selectedAuto
+    ? filteredAutos.filter((auto) => auto.id !== selectedAuto.id)
+    : filteredAutos;
 
   useEffect(() => {
     if (!selectedAuto || recordedDetailIdRef.current === selectedAuto.id) {
@@ -113,7 +110,11 @@ export function InventoryPage() {
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
   const logoSrc = demoCatalogContent.logos.header;
-  const whatsappNumber = (tenant?.whatsapp ?? '').replace(/\D/g, '');
+  const whatsappNumber = (
+    slug === 'demo-lote-norte'
+      ? demoCatalogContent.footer.whatsapp
+      : tenant?.whatsapp ?? demoCatalogContent.footer.whatsapp
+  ).replace(/\D/g, '');
   const heroImage = demoCatalogContent.heroImage;
 
   const handleFilterChange = (event) => {
@@ -204,6 +205,16 @@ export function InventoryPage() {
           />
         </section>
 
+        {selectedAuto ? (
+          <CarDetail
+            auto={selectedAuto}
+            onBack={handleBackToInventory}
+            onContact={(auto) => openWhatsappIntent(auto, 'contacto')}
+            onReserve={(auto) => openWhatsappIntent(auto, 'reserva')}
+            onTestDrive={(auto) => openWhatsappIntent(auto, 'prueba')}
+          />
+        ) : null}
+
         <section className="quick-filter-strip secondary-search-strip">
           <div className="advanced-filter-shell edge-pad">
             <div className="inventory-filter-grid">
@@ -286,23 +297,36 @@ export function InventoryPage() {
         </section>
 
         <section className="inventory-section" ref={inventoryAnchorRef}>
+          <div className="inventory-results-head edge-pad">
+            <div>
+              <span className="section-kicker">
+                {selectedAuto ? 'Más opciones para ti' : 'Inventario disponible'}
+              </span>
+              <h2>
+                {selectedAuto ? 'Continúa explorando' : 'Encuentra tu próximo auto'}
+              </h2>
+            </div>
+            <span className="inventory-result-count">
+              {remainingAutos.length} unidad(es)
+            </span>
+          </div>
           <CatalogGrid
-            autos={filteredAutos}
+            autos={remainingAutos}
             emptyMessage="No encontramos unidades con esa combinación de búsqueda."
             onSelect={handleSelectAuto}
             variant="inventory"
           />
         </section>
 
-        {selectedAuto ? (
-          <CarDetail
-            auto={selectedAuto}
-            onBack={handleBackToInventory}
-            onContact={(auto) => openWhatsappIntent(auto, 'contacto')}
-            onReserve={(auto) => openWhatsappIntent(auto, 'reserva')}
-            onTestDrive={(auto) => openWhatsappIntent(auto, 'prueba')}
-          />
-        ) : null}
+        <PublicSiteFooter
+          {...demoCatalogContent.footer}
+          brandName={brandName}
+          brandSubmark={brandSubmark}
+          email={tenant?.email_contacto ?? demoCatalogContent.footer.email}
+          footerLogo={demoCatalogContent.logos.footer}
+          slug={slug}
+          variant="compact"
+        />
       </main>
     </>
   );

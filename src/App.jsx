@@ -39,6 +39,11 @@ const PlatformDashboardPage = lazy(() =>
     default: module.PlatformDashboardPage,
   })),
 );
+const LegalPage = lazy(() =>
+  import('./pages/LegalPage').then((module) => ({
+    default: module.LegalPage,
+  })),
+);
 
 function TenantLayout() {
   return (
@@ -66,6 +71,9 @@ export default function App() {
           <Route path="inventario" element={<InventoryPage />} />
           <Route path="inventario/:autoId" element={<InventoryPage />} />
           <Route path="vende-tu-auto" element={<SellYourCarPage />} />
+          <Route path="aviso-de-privacidad" element={<LegalPage documentType="aviso-de-privacidad" />} />
+          <Route path="terminos" element={<LegalPage documentType="terminos" />} />
+          <Route path="cookies" element={<LegalPage documentType="cookies" />} />
           <Route path="admin/login" element={<AdminLoginPage />} />
           <Route
             path="admin"

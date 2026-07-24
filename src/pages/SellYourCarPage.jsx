@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { CheckCircle2, ImagePlus, LoaderCircle, Send } from 'lucide-react';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
+import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
 import { supabaseConfig } from '../lib/supabaseClient.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
@@ -156,7 +157,12 @@ export function SellYourCarPage() {
       </Helmet>
 
       <main className="site-shell">
-        <section className="secondary-hero">
+        <section
+          className="secondary-hero"
+          style={{
+            backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.82) 100%), url("${demoCatalogContent.heroImage}")`,
+          }}
+        >
           <PublicSiteHeader
             brandName={brandName}
             brandSubmark={brandSubmark}
@@ -172,15 +178,23 @@ export function SellYourCarPage() {
             <div className="stack-md">
               <span className="eyebrow">Solicitud sin cuenta</span>
               <h1 className="heading-lg">{demoCatalogContent.sell.title}</h1>
-              <p className="muted">
-                Comparte la información de tu auto. El equipo la revisará y te contactará para
-                evaluar la compra o consignación. Enviar esta solicitud no publica un anuncio.
-              </p>
+              <p className="muted">{demoCatalogContent.sell.body}</p>
               <div className="panel-card stack-sm">
                 <strong>¿Qué sucede después?</strong>
                 <span className="muted">1. Recibimos tus datos y fotos de forma privada.</span>
                 <span className="muted">2. Un admin asigna tu solicitud al staff indicado.</span>
                 <span className="muted">3. El responsable te contacta y actualiza el seguimiento.</span>
+              </div>
+              <div className="sell-contact-card">
+                <span>¿Prefieres atención inmediata?</span>
+                <a
+                  className="edge-button edge-button-ghost"
+                  href={`https://wa.me/${demoCatalogContent.footer.whatsapp.replace(/\D/g, '')}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  WhatsApp {demoCatalogContent.footer.phone}
+                </a>
               </div>
             </div>
 
@@ -363,6 +377,14 @@ export function SellYourCarPage() {
             )}
           </div>
         </section>
+        <PublicSiteFooter
+          {...demoCatalogContent.footer}
+          brandName={brandName}
+          brandSubmark={brandSubmark}
+          email={tenant?.email_contacto ?? demoCatalogContent.footer.email}
+          footerLogo={demoCatalogContent.logos.footer}
+          slug={slug}
+        />
       </main>
     </>
   );

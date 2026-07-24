@@ -28,7 +28,10 @@ export function PublicCatalogPage() {
   const primaryCtaHref = `/${slug}/inventario`;
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;
   const heroImage = demoCatalogContent.heroImage;
-  const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
+  const phone =
+    slug === 'demo-lote-norte'
+      ? demoCatalogContent.footer.phone
+      : tenant?.telefono ?? demoCatalogContent.footer.phone;
   useEffect(() => {
     setFeaturedPage(0);
   }, [tenant?.id, featuredPool.length]);
@@ -169,6 +172,13 @@ export function PublicCatalogPage() {
           hours={demoCatalogContent.footer.hours}
           legal={demoCatalogContent.footer.legal}
           phone={phone}
+          whatsapp={
+            slug === 'demo-lote-norte'
+              ? demoCatalogContent.footer.whatsapp
+              : tenant?.whatsapp ?? demoCatalogContent.footer.whatsapp
+          }
+          email={tenant?.email_contacto ?? demoCatalogContent.footer.email}
+          slug={slug}
         />
       </main>
     </>

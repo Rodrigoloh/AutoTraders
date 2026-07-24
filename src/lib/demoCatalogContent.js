@@ -76,16 +76,19 @@ export const demoCatalogContent = {
   },
   sell: {
     kicker: 'Vende tu auto',
-    title: 'Sección en construcción',
-    body: 'Sección en construcción',
+    title: 'Recibe una evaluación profesional de tu auto',
+    body:
+      'Comparte los datos y fotografías de tu vehículo sin crear una cuenta. Nuestro equipo revisará la información y te contactará para continuar con una propuesta de compra o consignación.',
   },
   footer: {
     address: 'Av. Constitución S/N (Frente a la Macroplaza), Monterrey, N.L.',
-    phone: '+52 81 0000 0000',
+    phone: '+52 81 8208 5411',
+    whatsapp: '+528182085411',
+    email: 'contacto@autosdelnorte.mx',
     hours: 'Lun a Sab · 9:30 a 19:00',
     blurb:
-      'Contacto directo para citas, videos, apartados y seguimiento comercial desde Monterrey.',
+      'Atención directa para citas, recorridos en video, apartados, consignación y seguimiento comercial desde Monterrey.',
     legal:
-      '© 2026 Demo Auto Saler | Politicas de Privacidad | Contactanos',
+      '© 2026 Autos del Norte. Todos los derechos reservados.',
   },
 };
