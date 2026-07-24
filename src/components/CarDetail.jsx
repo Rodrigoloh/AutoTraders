@@ -105,13 +105,13 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
             tabIndex={0}
           >
             <div className="detail-stage-preview detail-stage-preview-left" aria-hidden="true">
-              <img alt="" src={previousImage} />
+              <img alt="" decoding="async" loading="lazy" src={previousImage} />
             </div>
             <div className="detail-stage-preview detail-stage-preview-right" aria-hidden="true">
-              <img alt="" src={nextImage} />
+              <img alt="" decoding="async" loading="lazy" src={nextImage} />
             </div>
             <div className="detail-stage-main">
-              <img alt={`${auto?.marca} ${auto?.modelo}`} src={activeImage} />
+              <img alt={`${auto?.marca} ${auto?.modelo}`} decoding="async" src={activeImage} />
             </div>
             <button
               aria-label="Imagen anterior"
@@ -142,7 +142,12 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
                 onClick={() => setCurrentIndex(index)}
                 type="button"
               >
-                <img alt={`${auto?.marca} imagen ${index + 1}`} src={image} />
+                <img
+                  alt={`${auto?.marca} imagen ${index + 1}`}
+                  decoding="async"
+                  loading="lazy"
+                  src={image}
+                />
               </button>
             ))}
           </div>

@@ -42,6 +42,7 @@ export function AutoCard({ auto, onSelect, variant = 'featured' }) {
       <button className="vehicle-media" onClick={() => onSelect(auto)} type="button">
         <img
           alt={`${auto.marca} ${auto.modelo} ${auto.anio}`}
+          decoding="async"
           loading="lazy"
           src={primaryImage(auto)}
         />

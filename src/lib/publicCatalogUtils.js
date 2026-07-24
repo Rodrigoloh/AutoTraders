@@ -3,7 +3,8 @@ import { supabase } from './supabaseClient';
 import { demoCatalogContent } from './demoCatalogContent.js';
 
 function commonsImage(filePath) {
-  return `https://upload.wikimedia.org/wikipedia/commons/${filePath}`;
+  const fileName = filePath.split('/').at(-1);
+  return `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${fileName}&width=960`;
 }
 
 function galleryKey(marca, modelo) {
