@@ -11,7 +11,7 @@ export const demoCatalogContent = {
   heroImage:
     'https://hips.hearstapps.com/hmg-prod/images/lamborghini-urus-se-2-662915ee316e0.jpg?crop=1xw:1xh;center,top',
   brand: {
-    wordmark: 'Lote de Autos del Norte',
+    wordmark: 'Zertuche Cars',
     submark: 'Monterrey, N.L.',
   },
   nav: [
@@ -59,7 +59,7 @@ export const demoCatalogContent = {
     },
     {
       kicker: 'Marca',
-      title: 'Por que comprar tu auto en Autos del norte?',
+      title: '¿Por qué comprar tu auto en Zertuche Cars?',
       body:
         'Contamos con amplia experiencia y el mejor equipo para poder atenderte como te mereces. ',
     },
@@ -82,13 +82,13 @@ export const demoCatalogContent = {
   },
   footer: {
     address: 'Av. Constitución S/N (Frente a la Macroplaza), Monterrey, N.L.',
-    phone: '+52 81 8208 5411',
-    whatsapp: '+528182085411',
+    phone: '+52 81 1814 2655',
+    whatsapp: '+528118142655',
     email: 'contacto@autosdelnorte.mx',
     hours: 'Lun a Sab · 9:30 a 19:00',
     blurb:
       'Atención directa para citas, recorridos en video, apartados, consignación y seguimiento comercial desde Monterrey.',
     legal:
-      '© 2026 Autos del Norte. Todos los derechos reservados.',
+      '© 2026 Zertuche Cars. Todos los derechos reservados.',
   },
 };
