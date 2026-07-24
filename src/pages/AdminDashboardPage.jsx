@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Eye, LogOut, Plus } from 'lucide-react';
+import { CarFront, LayoutDashboard, LogOut, MessageCircleMore, Plus, UsersRound } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
@@ -277,14 +277,11 @@ export function AdminDashboardPage() {
                 />
                 <div className="stack-sm" style={{ gap: 4 }}>
                   <strong>{tenant?.nombre}</strong>
-                  <span className="muted">Dashboard operativo del lote</span>
+                  <span className="muted">Centro de operación comercial</span>
                 </div>
               </div>
               <div className="admin-topbar-actions">
-                <a className="btn-outline" href={`/${slug}`} target="_blank" rel="noreferrer">
-                  <Eye size={18} />
-                  Ver demo publica
-                </a>
+                <span className="admin-role-pill">{isLoteAdmin ? 'Administrador' : 'Staff'}</span>
                 <button className="btn-outline" onClick={handleLogout} type="button">
                   <LogOut size={18} />
                   Salir
@@ -292,16 +289,30 @@ export function AdminDashboardPage() {
               </div>
             </div>
             <div className="hero-copy stack-md">
-              <span className="catalog-eyebrow">Panel protegido con Supabase y RLS</span>
-              <h1 className="heading-lg">Dashboard de rendimiento de inventario y leads</h1>
+              <span className="catalog-eyebrow">Resumen del lote</span>
+              <h1 className="heading-lg">Inventario, equipo y oportunidades en un solo lugar</h1>
               <p className="muted">
-                Revisa el rendimiento del inventario, el interés comercial y la permanencia de
-                cada unidad para rotar mejor el lote.
+                Consulta el rendimiento de los últimos 90 días y atiende las unidades y leads
+                dentro de tu alcance.
               </p>
             </div>
+            <nav aria-label="Secciones del dashboard" className="admin-section-nav">
+              <a href="#metricas"><LayoutDashboard size={17} />Métricas</a>
+              {isLoteAdmin ? <a href="#equipo"><UsersRound size={17} />Equipo</a> : null}
+              <a href="#inventario"><CarFront size={17} />Inventario</a>
+              <a href="#leads"><MessageCircleMore size={17} />Leads</a>
+            </nav>
           </section>
 
-          <section className="kpi-grid admin-kpi-grid">
+          <section className="dashboard-section stack-md" id="metricas">
+            <div className="dashboard-section-heading">
+              <div>
+                <span className="catalog-eyebrow">Últimos 90 días</span>
+                <h2 className="heading-md">Pulso comercial</h2>
+              </div>
+              <p className="muted">Indicadores del inventario visible dentro de tu nivel de acceso.</p>
+            </div>
+            <div className="kpi-grid admin-kpi-grid">
             <KpiSummary
               helpText="Todas las unidades dadas de alta en el lote."
               title="Inventario Total"
@@ -362,6 +373,7 @@ export function AdminDashboardPage() {
               type="conversion"
               value={formatCompact(summary.saleLeadWon)}
             />
+            </div>
           </section>
 
           <section className="dashboard-grid admin-insight-grid">
@@ -378,7 +390,13 @@ export function AdminDashboardPage() {
             />
           </section>
 
-          <section className="panel-card stack-md">
+          {isLoteAdmin ? (
+            <div id="equipo">
+              <StaffManager loteId={tenant?.id} onChanged={loadDashboard} staff={staffOptions} />
+            </div>
+          ) : null}
+
+          <section className="panel-card stack-md" id="inventario">
             <div className="inline-row" style={{ justifyContent: 'space-between' }}>
               <div className="stack-sm" style={{ gap: 4 }}>
                 <h2 className="heading-md">Inventario del lote</h2>
@@ -412,18 +430,16 @@ export function AdminDashboardPage() {
             staffOptions={staffOptions}
           />
 
-          {isLoteAdmin ? (
-            <StaffManager loteId={tenant?.id} onChanged={loadDashboard} staff={staffOptions} />
-          ) : null}
+          <div className="stack-lg" id="leads">
+            <BuyerLeadManager loteId={tenant?.id} />
 
-          <BuyerLeadManager loteId={tenant?.id} />
-
-          <SaleLeadManager
-            isAdmin={isLoteAdmin}
-            loteId={tenant?.id}
-            onChanged={loadDashboard}
-            staffOptions={staffOptions}
-          />
+            <SaleLeadManager
+              isAdmin={isLoteAdmin}
+              loteId={tenant?.id}
+              onChanged={loadDashboard}
+              staffOptions={staffOptions}
+            />
+          </div>
         </div>
       </main>
     </>

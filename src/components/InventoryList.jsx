@@ -10,7 +10,6 @@ import {
   ImagePlus,
   ArrowLeft,
   ArrowRight,
-  ChevronDown,
   Star,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -346,6 +345,64 @@ export function InventoryList({
             ) : null}
             <div className="inventory-thumb">
               <img src={getImage(auto)} alt={`${auto.marca} ${auto.modelo}`} />
+              <div className="inventory-photo-actions">
+                {canFeature && !isPlaceholderAuto(auto) ? (
+                  <button
+                    aria-label={auto.destacado ? 'Quitar de destacados' : 'Destacar en home'}
+                    aria-pressed={Boolean(auto.destacado)}
+                    className={`inventory-icon-action ${auto.destacado ? 'is-featured' : ''}`}
+                    disabled={featureSavingId === auto.id}
+                    onClick={() => handleFeaturedChange(auto)}
+                    title={auto.destacado ? 'Quitar de destacados' : 'Destacar en home'}
+                    type="button"
+                  >
+                    {featureSavingId === auto.id
+                      ? <LoaderCircle className="spin" size={18} />
+                      : <Star fill={auto.destacado ? 'currentColor' : 'none'} size={18} />}
+                  </button>
+                ) : null}
+                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
+                  <button
+                    aria-label="Editar información y fotografías"
+                    className="inventory-icon-action"
+                    onClick={() => startEdit(auto)}
+                    title="Editar información y fotografías"
+                    type="button"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                ) : null}
+                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
+                  <button
+                    aria-label={`Cambiar estatus. Actual: ${formatStatusLabel(auto.estatus)}`}
+                    className="inventory-icon-action"
+                    onClick={() =>
+                      setStatusMenuId((current) => (current === auto.id ? null : auto.id))
+                    }
+                    title={`Estatus: ${formatStatusLabel(auto.estatus)}`}
+                    type="button"
+                  >
+                    {statusSavingId === auto.id
+                      ? <LoaderCircle className="spin" size={18} />
+                      : <CheckCheck size={18} />}
+                  </button>
+                ) : null}
+              </div>
+              {canEdit && canManipulate && !isPlaceholderAuto(auto) && statusMenuId === auto.id ? (
+                <div className="inventory-status-popover">
+                  {statusOptions.map((status) => (
+                    <button
+                      className={status === auto.estatus ? 'is-active' : ''}
+                      disabled={statusSavingId === auto.id}
+                      key={`${auto.id}-${status}`}
+                      onClick={() => handleStatusChange(auto.id, status)}
+                      type="button"
+                    >
+                      {formatStatusLabel(status)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="stack-sm">
               <div className="inline-row">
@@ -401,73 +458,24 @@ export function InventoryList({
                   </select>
                 </div>
               ) : null}
-              <div className="inventory-actions">
-                {canFeature && !isPlaceholderAuto(auto) ? (
-                  <button
-                    aria-pressed={Boolean(auto.destacado)}
-                    className={auto.destacado ? 'btn' : 'btn-soft'}
-                    disabled={featureSavingId === auto.id}
-                    onClick={() => handleFeaturedChange(auto)}
-                    type="button"
-                  >
-                    <Star fill={auto.destacado ? 'currentColor' : 'none'} size={16} />
-                    {featureSavingId === auto.id
-                      ? 'Guardando...'
-                      : auto.destacado
-                        ? 'Destacado en home'
-                        : 'Destacar en home'}
-                  </button>
-                ) : null}
-                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
-                  <button className="btn-soft" onClick={() => startEdit(auto)} type="button">
-                    <Pencil size={16} />
-                    Editar specs
-                  </button>
-                ) : null}
-                {canEdit && canManipulate && !isPlaceholderAuto(auto) ? (
-                  <button
-                    className="btn-soft"
-                    onClick={() =>
-                      setStatusMenuId((current) => (current === auto.id ? null : auto.id))
-                    }
-                    type="button"
-                  >
-                    <CheckCheck size={16} />
-                    {statusSavingId === auto.id
-                      ? 'Guardando...'
-                      : `Status: ${formatStatusLabel(auto.estatus)}`}
-                    <ChevronDown size={16} />
-                  </button>
-                ) : null}
-                {canDelete && !isPlaceholderAuto(auto) ? (
-                  <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
-                    <Trash2 size={16} />
-                    Eliminar
-                  </button>
-                ) : null}
-              </div>
-              {canEdit && canManipulate && !isPlaceholderAuto(auto) && statusMenuId === auto.id ? (
-                <div className="inventory-actions">
-                  {statusOptions.map((status) => (
-                    <button
-                      className={status === auto.estatus ? 'btn' : 'btn-outline'}
-                      disabled={statusSavingId === auto.id}
-                      key={`${auto.id}-${status}`}
-                      onClick={() => handleStatusChange(auto.id, status)}
-                      type="button"
-                    >
-                      {formatStatusLabel(status)}
-                    </button>
-                  ))}
-                </div>
+              {canDelete && !isPlaceholderAuto(auto) ? (
+                <button className="btn-outline" onClick={() => handleDelete(auto.id)} type="button">
+                  <Trash2 size={16} />
+                  Eliminar
+                </button>
               ) : null}
               {canEdit && canManipulate && !isPlaceholderAuto(auto) && editingId === auto.id && draft ? (
-                <div className="panel-card stack-md">
-                  <div>
-                    <strong>Editar tarjeta y specs</strong>
+                <div aria-modal="true" className="inventory-edit-modal panel-card stack-md" role="dialog">
+                  <div className="inventory-edit-modal-head">
+                    <div>
+                    <strong>Editar {auto.marca} {auto.modelo}</strong>
                     <p className="muted">
-                      Ajusta solo la información visible del auto para la tarjeta y la ficha.
+                      Ajusta la información, especificaciones y galería visible del vehículo.
                     </p>
+                    </div>
+                    <button aria-label="Cerrar edición" className="inventory-modal-close" onClick={cancelEdit} type="button">
+                      <X size={20} />
+                    </button>
                   </div>
                   <div className="form-grid">
                     <div className="field">
