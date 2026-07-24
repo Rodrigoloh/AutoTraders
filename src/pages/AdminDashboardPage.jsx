@@ -80,7 +80,7 @@ function normalizeMetrics(metrics) {
 }
 
 function applyDemoDashboardTimeline(autos, slug) {
-  if (slug !== 'demo-lote-norte') {
+  if (slug !== demoCatalogContent.slug) {
     return autos;
   }
 

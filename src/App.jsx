@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './styles/themeContext.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PlatformProtectedRoute } from './components/PlatformProtectedRoute';
@@ -53,6 +53,18 @@ function TenantLayout() {
   );
 }
 
+function LegacyTenantRedirect() {
+  const location = useLocation();
+  const suffix = location.pathname.replace(/^\/demo-lote-norte/, '');
+
+  return (
+    <Navigate
+      to={`/zertuchecars${suffix}${location.search}${location.hash}`}
+      replace
+    />
+  );
+}
+
 export default function App() {
   return (
     <Suspense fallback={<div className="app-shell"><div className="container loading-state">Cargando interfaz...</div></div>}>
@@ -66,6 +78,7 @@ export default function App() {
             </PlatformProtectedRoute>
           }
         />
+        <Route path="/demo-lote-norte/*" element={<LegacyTenantRedirect />} />
         <Route path="/:slug" element={<TenantLayout />}>
           <Route index element={<PublicCatalogPage />} />
           <Route path="inventario" element={<InventoryPage />} />
@@ -84,7 +97,7 @@ export default function App() {
             }
           />
         </Route>
-        <Route path="*" element={<Navigate to="/demo-lote-norte" replace />} />
+        <Route path="*" element={<Navigate to="/zertuchecars" replace />} />
       </Routes>
     </Suspense>
   );

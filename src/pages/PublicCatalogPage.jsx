@@ -14,7 +14,7 @@ export function PublicCatalogPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
   const navigate = useNavigate();
   const { autos, loadingAutos } = usePublicInventory(tenant?.id, {
-    includeDemoAutos: slug === 'demo-lote-norte',
+    includeDemoAutos: slug === demoCatalogContent.slug,
   });
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
@@ -29,7 +29,7 @@ export function PublicCatalogPage() {
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;
   const heroImage = demoCatalogContent.heroImage;
   const phone =
-    slug === 'demo-lote-norte'
+    slug === demoCatalogContent.slug
       ? demoCatalogContent.footer.phone
       : tenant?.telefono ?? demoCatalogContent.footer.phone;
   useEffect(() => {
@@ -176,7 +176,7 @@ export function PublicCatalogPage() {
           legal={demoCatalogContent.footer.legal}
           phone={phone}
           whatsapp={
-            slug === 'demo-lote-norte'
+            slug === demoCatalogContent.slug
               ? demoCatalogContent.footer.whatsapp
               : tenant?.whatsapp ?? demoCatalogContent.footer.whatsapp
           }

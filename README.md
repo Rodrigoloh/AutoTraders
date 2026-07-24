@@ -45,7 +45,7 @@ npm run dev
 
 ## Deploy en Vercel
 
-Este proyecto usa React Router, así que incluye un `vercel.json` con rewrite global a `index.html` para que rutas como `/demo-lote-norte/admin` funcionen también al refrescar.
+Este proyecto usa React Router, así que incluye un `vercel.json` con rewrite global a `index.html` para que rutas como `/zertuchecars/admin` funcionen también al refrescar.
 
 Configuración recomendada en Vercel:
 
@@ -56,8 +56,8 @@ Configuración recomendada en Vercel:
 
 ## Demo
 
-- Catálogo: `/demo-lote-norte`
-- Admin: `/demo-lote-norte/admin/login`
+- Catálogo: `/zertuchecars`
+- Admin: `/zertuchecars/admin/login`
 - Plataforma: `/platform/login`
 - Usuario demo esperado en Supabase Auth: `demo-admin@carsaler.mx`
 

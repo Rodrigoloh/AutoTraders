@@ -4,6 +4,7 @@
 // - public/branding/demo-lote/logo-dark.svg
 
 export const demoCatalogContent = {
+  slug: 'zertuchecars',
   logos: {
     header: '/branding/demo-lote/logo-light.svg',
     footer: '/branding/demo-lote/logo-dark.svg',

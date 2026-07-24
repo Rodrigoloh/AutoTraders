@@ -31,7 +31,7 @@ export function InventoryPage() {
   const { autoId } = useParams();
   const navigate = useNavigate();
   const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id, {
-    includeDemoAutos: slug === 'demo-lote-norte',
+    includeDemoAutos: slug === demoCatalogContent.slug,
   });
   const [selectedAutoId, setSelectedAutoId] = useState(autoId ?? null);
   const [leadIntent, setLeadIntent] = useState('');

@@ -2,7 +2,7 @@
 -- Usage:
 -- 1) Create an auth user in Supabase Auth with the email defined below.
 -- 2) Run this script in the SQL editor after `final_multi_tenant_lotes.sql`.
--- 3) Open /demo-lote-norte in the frontend.
+-- 3) Open /zertuchecars in the frontend.
 
 do $$
 declare
@@ -29,7 +29,7 @@ begin
   values (
     demo_lote_id,
     'Autos Norte Demo',
-    'demo-lote-norte',
+    'zertuchecars',
     'demo.autosnorte.mx',
     '8181234567',
     '528181234567',
