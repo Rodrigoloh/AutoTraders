@@ -12,13 +12,15 @@ export function PublicSiteHeader({
 }) {
   return (
     <header className={`immersive-header ${mode === 'secondary' ? 'immersive-header-secondary' : ''}`}>
-      <BrandLogo
-        src={logoSrc}
-        alt={`${brandName} logo`}
-        brand={brandName}
-        submark={brandSubmark}
-        className="site-logo"
-      />
+      <Link aria-label={`Ir al inicio de ${brandName}`} className="site-logo-link" to={homeHref}>
+        <BrandLogo
+          src={logoSrc}
+          alt={`${brandName} logo`}
+          brand={brandName}
+          submark={brandSubmark}
+          className="site-logo"
+        />
+      </Link>
 
       {mode === 'secondary' ? (
         <nav className="header-nav" aria-label="Navegacion secundaria">

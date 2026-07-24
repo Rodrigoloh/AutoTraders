@@ -147,7 +147,7 @@ export function AdminDashboardPage() {
         supabase
           .from('inventario')
           .select(
-            'id, assigned_staff_id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes, meta_tags, created_at',
+            'id, assigned_staff_id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, destacado, imagenes, meta_tags, created_at',
           )
           .eq('lote_id', tenant.id)
           .order('created_at', { ascending: false }),
@@ -197,7 +197,7 @@ export function AdminDashboardPage() {
   const hasGlobalLoteScope = ['lote_admin', 'super_admin'].includes(sessionRole);
   const dashboardAutos = useMemo(() => {
     if (slug === 'demo-lote-norte' && hasGlobalLoteScope) {
-      return applyDemoDashboardTimeline(expandDemoAutos(autos, 6), slug);
+      return applyDemoDashboardTimeline(expandDemoAutos(autos, 12), slug);
     }
 
     return autos;
@@ -377,6 +377,7 @@ export function AdminDashboardPage() {
             autos={dashboardAutos}
             canAssignStaff={isLoteAdmin}
             canEdit={canManageInventory}
+            canFeature={isLoteAdmin}
             canManageImages={canManageInventory}
             loteId={tenant?.id}
             onRefresh={loadDashboard}

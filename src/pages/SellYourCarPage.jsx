@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { CheckCircle2, ImagePlus, LoaderCircle, Send } from 'lucide-react';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
-import { supabase } from '../lib/supabaseClient.js';
+import { supabaseConfig } from '../lib/supabaseClient.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
 const initialForm = {
@@ -23,6 +23,42 @@ const initialForm = {
   consent: false,
   website: '',
 };
+
+async function submitSaleLead(body) {
+  if (!supabaseConfig.url || !supabaseConfig.key) {
+    throw new Error('El formulario no está configurado. Contacta al lote por teléfono.');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 90000);
+
+  try {
+    const response = await fetch(`${supabaseConfig.url}/functions/v1/create-sale-lead`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseConfig.key,
+        Authorization: `Bearer ${supabaseConfig.key}`,
+      },
+      body,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data?.error) {
+      throw new Error(data?.error || 'No se pudo enviar la solicitud.');
+    }
+
+    return data;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('La carga tardó demasiado. Revisa tu conexión e intenta nuevamente.');
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 export function SellYourCarPage() {
   const { tenant, theme, slug } = useTenantTheme();
@@ -82,9 +118,15 @@ export function SellYourCarPage() {
     }
 
     const oversizedPhoto = photos.find((photo) => photo.size > 10 * 1024 * 1024);
+    const totalPhotoBytes = photos.reduce((total, photo) => total + photo.size, 0);
 
     if (oversizedPhoto) {
       setFeedback(`La foto "${oversizedPhoto.name}" supera 10 MB.`);
+      return;
+    }
+
+    if (totalPhotoBytes > 40 * 1024 * 1024) {
+      setFeedback('Las fotos superan el límite total de 40 MB.');
       return;
     }
 
@@ -95,17 +137,16 @@ export function SellYourCarPage() {
     Object.entries(form).forEach(([key, value]) => body.set(key, String(value)));
     photos.forEach((photo) => body.append('photos', photo));
 
-    const { data, error } = await supabase.functions.invoke('create-sale-lead', { body });
-    setIsSubmitting(false);
-
-    if (error || data?.error) {
-      setFeedback(data?.error ?? error?.message ?? 'No se pudo enviar la solicitud.');
-      return;
+    try {
+      await submitSaleLead(body);
+      setForm(initialForm);
+      setPhotos([]);
+      setWasSubmitted(true);
+    } catch (error) {
+      setFeedback(error?.message ?? 'No se pudo enviar la solicitud. Intenta nuevamente.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setForm(initialForm);
-    setPhotos([]);
-    setWasSubmitted(true);
   };
 
   return (
@@ -309,7 +350,11 @@ export function SellYourCarPage() {
                     </span>
                   </label>
                 </div>
-                {feedback ? <div className="panel-card muted">{feedback}</div> : null}
+                {feedback ? (
+                  <div aria-live="polite" className="panel-card form-feedback" role="alert">
+                    {feedback}
+                  </div>
+                ) : null}
                 <button className="btn" disabled={isSubmitting} type="submit">
                   {isSubmitting ? <LoaderCircle className="spin" size={18} /> : <Send size={18} />}
                   {isSubmitting ? 'Enviando...' : 'Enviar para revisión'}

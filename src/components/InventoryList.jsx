@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronDown,
+  Star,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { uploadInventoryImages } from '../lib/inventoryImages.js';
@@ -94,6 +95,7 @@ export function InventoryList({
   canAssignStaff = false,
   canDelete = false,
   canEdit = false,
+  canFeature = false,
   canManageImages = false,
   canMarkSold = false,
   loteId = '',
@@ -109,6 +111,7 @@ export function InventoryList({
   const [statusMenuId, setStatusMenuId] = useState(null);
   const [statusSavingId, setStatusSavingId] = useState('');
   const [assignmentSavingId, setAssignmentSavingId] = useState('');
+  const [featureSavingId, setFeatureSavingId] = useState('');
 
   const filteredAutos = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -166,6 +169,25 @@ export function InventoryList({
 
     if (error) {
       setStatusMessage(error.message ?? 'No se pudo asignar el vehículo.');
+      return;
+    }
+
+    await onRefresh?.();
+  };
+
+  const handleFeaturedChange = async (auto) => {
+    setStatusMessage('');
+    setFeatureSavingId(auto.id);
+
+    const { error } = await supabase
+      .from('inventario')
+      .update({ destacado: !auto.destacado })
+      .eq('id', auto.id);
+
+    setFeatureSavingId('');
+
+    if (error) {
+      setStatusMessage(error.message ?? 'No se pudo cambiar la selección del home.');
       return;
     }
 
@@ -369,6 +391,22 @@ export function InventoryList({
                 </div>
               ) : null}
               <div className="inventory-actions">
+                {canFeature && !isPlaceholderAuto(auto) ? (
+                  <button
+                    aria-pressed={Boolean(auto.destacado)}
+                    className={auto.destacado ? 'btn' : 'btn-soft'}
+                    disabled={featureSavingId === auto.id}
+                    onClick={() => handleFeaturedChange(auto)}
+                    type="button"
+                  >
+                    <Star fill={auto.destacado ? 'currentColor' : 'none'} size={16} />
+                    {featureSavingId === auto.id
+                      ? 'Guardando...'
+                      : auto.destacado
+                        ? 'Destacado en home'
+                        : 'Destacar en home'}
+                  </button>
+                ) : null}
                 {canEdit && !isPlaceholderAuto(auto) ? (
                   <button className="btn-soft" onClick={() => startEdit(auto)} type="button">
                     <Pencil size={16} />

@@ -5,6 +5,11 @@ const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseClientKey = supabasePublishableKey ?? supabaseAnonKey;
 
+export const supabaseConfig = {
+  url: supabaseUrl,
+  key: supabaseClientKey,
+};
+
 if (!supabaseUrl || !supabaseClientKey) {
   console.warn(
     'Missing Supabase env vars. Define VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.',

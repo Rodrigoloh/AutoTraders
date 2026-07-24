@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { PublicSiteFooter } from '../components/PublicSiteFooter.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
 import { demoCatalogContent } from '../lib/demoCatalogContent.js';
+import { recordMetric } from '../lib/metrics.js';
 import { usePublicInventory } from '../lib/publicCatalogUtils.js';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 
@@ -19,13 +21,43 @@ export function PublicCatalogPage() {
   const brandSubmark = demoCatalogContent.brand.submark;
   const logoSrc = demoCatalogContent.logos.header;
   const footerLogo = demoCatalogContent.logos.footer;
-  const featuredAutos = autos.slice(0, 4);
+  const featuredPool = autos.slice(0, 12);
+  const [featuredPage, setFeaturedPage] = useState(0);
+  const featuredPageCount = Math.max(1, Math.ceil(featuredPool.length / 4));
+  const featuredAutos = featuredPool.slice(featuredPage * 4, featuredPage * 4 + 4);
   const primaryCtaHref = `/${slug}/inventario`;
   const secondaryCtaHref = `/${slug}/vende-tu-auto`;
   const heroImage = demoCatalogContent.heroImage;
   const phone = tenant?.telefono ?? demoCatalogContent.footer.phone;
-  const handleFeaturedSelect = () => {
-    navigate(primaryCtaHref);
+  useEffect(() => {
+    setFeaturedPage(0);
+  }, [tenant?.id, featuredPool.length]);
+
+  useEffect(() => {
+    if (featuredPageCount <= 1) {
+      return undefined;
+    }
+
+    const rotationId = window.setInterval(() => {
+      setFeaturedPage((current) => (current + 1) % featuredPageCount);
+    }, 8000);
+
+    return () => window.clearInterval(rotationId);
+  }, [featuredPageCount]);
+
+  const moveFeaturedPage = (direction) => {
+    setFeaturedPage((current) => (
+      (current + direction + featuredPageCount) % featuredPageCount
+    ));
+  };
+
+  const handleFeaturedSelect = (auto) => {
+    void recordMetric({
+      autoId: auto.id,
+      loteId: tenant?.id,
+      eventType: 'click_card',
+    });
+    navigate(`/${slug}/inventario/${encodeURIComponent(auto.id)}`);
   };
 
   const seo = useMemo(() => ({
@@ -84,6 +116,31 @@ export function PublicCatalogPage() {
         </section>
 
         <section className="featured-section">
+          <div className="featured-toolbar edge-pad">
+            <div>
+              <span className="section-kicker">Selección del lote</span>
+              <h2>Más vistos y destacados</h2>
+            </div>
+            {featuredPageCount > 1 ? (
+              <div className="featured-rotation-controls" aria-label="Rotar autos destacados">
+                <button
+                  aria-label="Ver autos anteriores"
+                  onClick={() => moveFeaturedPage(-1)}
+                  type="button"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <span>{featuredPage + 1} / {featuredPageCount}</span>
+                <button
+                  aria-label="Ver autos siguientes"
+                  onClick={() => moveFeaturedPage(1)}
+                  type="button"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            ) : null}
+          </div>
           <CatalogGrid
             autos={featuredAutos}
             emptyMessage="No hay autos destacados por ahora."

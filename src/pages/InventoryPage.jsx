@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { CarDetail } from '../components/CarDetail.jsx';
 import { PublicSiteHeader } from '../components/PublicSiteHeader.jsx';
@@ -24,11 +25,14 @@ function normalizeBudgetValue(value, fallback = '') {
 
 export function InventoryPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
+  const { autoId } = useParams();
+  const navigate = useNavigate();
   const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id, {
     includeDemoAutos: slug === 'demo-lote-norte',
   });
-  const [selectedAutoId, setSelectedAutoId] = useState(null);
+  const [selectedAutoId, setSelectedAutoId] = useState(autoId ?? null);
   const inventoryAnchorRef = useRef(null);
+  const recordedDetailIdRef = useRef('');
   const [filters, setFilters] = useState({
     vehicleType: 'all',
     minPrice: '0',
@@ -44,6 +48,10 @@ export function InventoryPage() {
       maxPrice: current.maxPrice === 'all' ? String(maxBudget) : current.maxPrice,
     }));
   }, [maxBudget]);
+
+  useEffect(() => {
+    setSelectedAutoId(autoId ?? null);
+  }, [autoId]);
 
   const budgetOptions = useMemo(() => buildBudgetOptions(maxBudget), [maxBudget]);
 
@@ -79,6 +87,28 @@ export function InventoryPage() {
     filteredAutos.find((auto) => auto.id === selectedAutoId) ??
     autos.find((auto) => auto.id === selectedAutoId) ??
     null;
+
+  useEffect(() => {
+    if (!selectedAuto || recordedDetailIdRef.current === selectedAuto.id) {
+      return;
+    }
+
+    recordedDetailIdRef.current = selectedAuto.id;
+    void recordMetric({
+      autoId: selectedAuto.id,
+      loteId: tenant?.id,
+      eventType: 'view_detail',
+    });
+
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById('detalle-auto')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 60);
+    });
+  }, [selectedAuto, tenant?.id]);
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;
@@ -120,18 +150,18 @@ export function InventoryPage() {
 
   const handleSelectAuto = (auto) => {
     setSelectedAutoId(auto.id);
-    window.requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById('detalle-auto')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }, 60);
+    void recordMetric({
+      autoId: auto.id,
+      loteId: tenant?.id,
+      eventType: 'click_card',
     });
+    navigate(`/${slug}/inventario/${encodeURIComponent(auto.id)}`);
   };
 
   const handleBackToInventory = () => {
     setSelectedAutoId(null);
+    recordedDetailIdRef.current = '';
+    navigate(`/${slug}/inventario`);
     window.requestAnimationFrame(() => {
       setTimeout(() => {
         inventoryAnchorRef.current?.scrollIntoView({

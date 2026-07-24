@@ -94,7 +94,16 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
 
       <div className="detail-hero-grid edge-pad">
         <div className="detail-carousel">
-          <div className="detail-stage">
+          <div
+            aria-label={`Galería de ${auto?.marca} ${auto?.modelo}. Usa las flechas para cambiar de foto.`}
+            className="detail-stage"
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowLeft') moveGallery(-1);
+              if (event.key === 'ArrowRight') moveGallery(1);
+            }}
+            role="group"
+            tabIndex={0}
+          >
             <div className="detail-stage-preview detail-stage-preview-left" aria-hidden="true">
               <img alt="" src={previousImage} />
             </div>
@@ -120,6 +129,9 @@ export function CarDetail({ auto, onBack, onContact, onReserve, onTestDrive }) {
             >
               <ChevronRight size={20} />
             </button>
+            <span aria-live="polite" className="carousel-counter">
+              {currentIndex + 1} / {images.length}
+            </span>
           </div>
 
           <div className="detail-thumb-track">
