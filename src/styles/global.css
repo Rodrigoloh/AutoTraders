@@ -1801,6 +1801,46 @@ img {
 }
 
 @media (max-width: 767px) {
+  .immersive-hero {
+    align-items: center;
+    min-height: 100svh;
+    min-height: 100dvh;
+    padding: 88px 18px max(48px, env(safe-area-inset-bottom));
+    background-position: 58% center;
+  }
+
+  .hero-copy-block {
+    width: 100%;
+    gap: 12px;
+    transform: translateY(-3vh);
+  }
+
+  .hero-title {
+    max-width: 22ch;
+    font-size: clamp(1.85rem, 8.8vw, 2.65rem);
+    line-height: 1.04;
+  }
+
+  .hero-subtext {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .hero-action-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .hero-action-row .edge-button {
+    min-width: 0;
+    min-height: 48px;
+    padding-inline: 10px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
   .app-shell {
     padding: 12px 10px 36px;
   }
