@@ -48,17 +48,21 @@ export function InventoryPage() {
   const searchReadyRef = useRef(false);
 
   useEffect(() => {
-    setFilters((current) => ({
-      ...current,
-      maxPrice: current.maxPrice === 'all' ? String(maxBudget) : current.maxPrice,
-    }));
-  }, [maxBudget]);
-
-  useEffect(() => {
     setSelectedAutoId(autoId ?? null);
   }, [autoId]);
 
   const budgetOptions = useMemo(() => buildBudgetOptions(maxBudget), [maxBudget]);
+  const vehicleTypeOptions = useMemo(() => {
+    const counts = autos.reduce((types, auto) => {
+      const vehicleType = inferVehicleType(auto);
+      types.set(vehicleType, (types.get(vehicleType) ?? 0) + 1);
+      return types;
+    }, new Map());
+
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((left, right) => left.value.localeCompare(right.value, 'es'));
+  }, [autos]);
 
   const filteredAutos = useMemo(() => {
     return autos.filter((auto) => {
@@ -231,10 +235,12 @@ export function InventoryPage() {
                   onChange={handleFilterChange}
                   value={filters.vehicleType}
                 >
-                  <option value="all">Todos</option>
-                  <option value="SUV">SUV</option>
-                  <option value="Sedán">Sedán</option>
-                  <option value="Deportivo">Deportivo</option>
+                  <option value="all">Todos ({autos.length})</option>
+                  {vehicleTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.value} ({option.count})
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="filter-field">

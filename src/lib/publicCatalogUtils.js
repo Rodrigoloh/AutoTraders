@@ -289,38 +289,64 @@ export function primaryImage(auto) {
 }
 
 export function inferVehicleType(auto) {
+  const declaredType = String(auto?.meta_tags?.body_shape ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const canonicalTypes = [
+    { label: 'Pickup', matches: ['pickup', 'pick up', 'camion pickup'] },
+    { label: 'SUV', matches: ['suv', 'crossover'] },
+    { label: 'Coupé', matches: ['coupe'] },
+    { label: 'Sedán', matches: ['sedan'] },
+    { label: 'Hatchback', matches: ['hatchback', 'hatch'] },
+    { label: 'Convertible', matches: ['convertible', 'cabriolet'] },
+    { label: 'Sportback', matches: ['sportback'] },
+    { label: 'Roadster', matches: ['roadster'] },
+    { label: 'Vagoneta', matches: ['wagon', 'vagoneta', 'familiar'] },
+    { label: 'Minivan', matches: ['minivan'] },
+    { label: 'Van', matches: ['van'] },
+  ];
+
+  const declaredMatch = canonicalTypes.find(({ matches }) =>
+    matches.some((type) => declaredType === type || declaredType.includes(type)),
+  );
+
+  if (declaredMatch) {
+    return declaredMatch.label;
+  }
+
   const haystack = [
     auto?.version,
     auto?.descripcion,
     auto?.modelo,
-    auto?.meta_tags?.body_shape,
   ]
     .filter(Boolean)
     .join(' ')
-    .toLowerCase();
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
-  if (
-    haystack.includes('suv') ||
-    haystack.includes('pickup') ||
-    haystack.includes('camioneta') ||
-    haystack.includes('crossover')
-  ) {
-    return 'SUV';
+  const inferredMatch = canonicalTypes.find(({ matches }) =>
+    matches.some((type) => haystack.includes(type)),
+  );
+
+  if (inferredMatch) {
+    return inferredMatch.label;
   }
 
   if (
-    haystack.includes('amg') ||
-    haystack.includes('m ') ||
-    haystack.includes('gt') ||
-    haystack.includes('sport') ||
-    haystack.includes('deportivo') ||
-    haystack.includes('coupe') ||
-    haystack.includes('turbo')
+    /\b(cheyenne|silverado|lightning|lobo|ranger|ram|f-?150|tacoma|hilux)\b/.test(
+      haystack,
+    )
   ) {
-    return 'Deportivo';
+    return 'Pickup';
   }
 
-  return 'Sedán';
+  return declaredType
+    ? declaredType.charAt(0).toUpperCase() + declaredType.slice(1)
+    : 'Otro';
 }
 
 export function buildBudgetOptions(maxBudget) {
