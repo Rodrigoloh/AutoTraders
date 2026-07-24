@@ -191,7 +191,7 @@ export function expandDemoAutos(autos, targetCount = 6) {
   return expanded;
 }
 
-export function usePublicInventory(tenantId) {
+export function usePublicInventory(tenantId, { includeDemoAutos = false } = {}) {
   const [autos, setAutos] = useState([]);
   const [loadingAutos, setLoadingAutos] = useState(true);
 
@@ -229,17 +229,20 @@ export function usePublicInventory(tenantId) {
     };
   }, [tenantId]);
 
-  const demoAutos = useMemo(() => expandDemoAutos(autos, 6), [autos]);
+  const visibleAutos = useMemo(
+    () => (includeDemoAutos ? expandDemoAutos(autos, 6) : autos),
+    [autos, includeDemoAutos],
+  );
 
   const maxBudget = useMemo(() => {
-    const prices = demoAutos.map((auto) => Number(auto.precio ?? 0)).filter(Boolean);
+    const prices = visibleAutos.map((auto) => Number(auto.precio ?? 0)).filter(Boolean);
 
     if (!prices.length) {
       return 1200000;
     }
 
     return Math.ceil(Math.max(...prices) / 100000) * 100000;
-  }, [demoAutos]);
+  }, [visibleAutos]);
 
-  return { autos: demoAutos, loadingAutos, maxBudget };
+  return { autos: visibleAutos, loadingAutos, maxBudget };
 }

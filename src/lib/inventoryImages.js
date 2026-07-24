@@ -4,11 +4,11 @@ function normalizeFileName(fileName) {
   return fileName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9.-]/g, '');
 }
 
-export async function uploadInventoryImages(loteId, files) {
+export async function uploadInventoryImages(loteId, files, inventoryId = 'unassigned') {
   const uploadResults = [];
 
   for (const file of files) {
-    const path = `${loteId}/${crypto.randomUUID()}-${normalizeFileName(file.name)}`;
+    const path = `${loteId}/${inventoryId}/${crypto.randomUUID()}-${normalizeFileName(file.name)}`;
     const { data, error } = await supabase.storage.from('autos').upload(path, file, {
       upsert: false,
     });

@@ -18,7 +18,7 @@ const initialLoteForm = {
 const initialMemberForm = {
   loteId: '',
   email: '',
-  role: 'lote_editor',
+  role: 'lote_staff',
   fullName: '',
 };
 
@@ -466,7 +466,8 @@ export function PlatformDashboardPage() {
                   onChange={handleMemberChange}
                   value={memberForm.role}
                 >
-                  <option value="lote_editor">Lote Editor</option>
+                  <option value="lote_staff">Staff</option>
+                  <option value="lote_editor">Editor (heredado)</option>
                   <option value="lote_viewer">Lote Viewer</option>
                   <option value="lote_admin">Lote Admin</option>
                 </select>
@@ -522,7 +523,8 @@ export function PlatformDashboardPage() {
                               }
                             >
                               <option value="lote_admin">Lote Admin</option>
-                              <option value="lote_editor">Lote Editor</option>
+                              <option value="lote_staff">Staff</option>
+                              <option value="lote_editor">Editor (heredado)</option>
                               <option value="lote_viewer">Lote Viewer</option>
                             </select>
                             <button

@@ -11,7 +11,9 @@ import { useTenantTheme } from '../styles/themeContext.jsx';
 export function PublicCatalogPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
   const navigate = useNavigate();
-  const { autos, loadingAutos } = usePublicInventory(tenant?.id);
+  const { autos, loadingAutos } = usePublicInventory(tenant?.id, {
+    includeDemoAutos: slug === 'demo-lote-norte',
+  });
 
   const brandName = tenant?.nombre ?? theme.brandName ?? demoCatalogContent.brand.wordmark;
   const brandSubmark = demoCatalogContent.brand.submark;

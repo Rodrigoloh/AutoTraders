@@ -24,7 +24,9 @@ function normalizeBudgetValue(value, fallback = '') {
 
 export function InventoryPage() {
   const { tenant, theme, isLoading, slug } = useTenantTheme();
-  const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id);
+  const { autos, loadingAutos, maxBudget } = usePublicInventory(tenant?.id, {
+    includeDemoAutos: slug === 'demo-lote-norte',
+  });
   const [selectedAutoId, setSelectedAutoId] = useState(null);
   const inventoryAnchorRef = useRef(null);
   const [filters, setFilters] = useState({
@@ -97,13 +99,7 @@ export function InventoryPage() {
     }));
   };
 
-  const openWhatsappIntent = async (auto, intent) => {
-    await recordMetric({
-      autoId: auto.id,
-      loteId: tenant?.id,
-      eventType: 'click_whatsapp',
-    });
-
+  const openWhatsappIntent = (auto, intent) => {
     const messages = {
       reserva: `Hola ${brandName}, quiero reservar el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
       prueba: `Hola ${brandName}, quiero agendar una prueba para el ${auto.marca} ${auto.modelo} ${auto.anio} con ID ${auto.id}.`,
@@ -114,6 +110,12 @@ export function InventoryPage() {
       const text = encodeURIComponent(messages[intent] ?? messages.contacto);
       window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
     }
+
+    void recordMetric({
+      autoId: auto.id,
+      loteId: tenant?.id,
+      eventType: 'click_whatsapp',
+    });
   };
 
   const handleSelectAuto = (auto) => {
@@ -255,7 +257,7 @@ export function InventoryPage() {
 
         <section className="inventory-section" ref={inventoryAnchorRef}>
           <CatalogGrid
-            autos={filteredAutos.slice(0, 6)}
+            autos={filteredAutos}
             emptyMessage="No encontramos unidades con esa combinación de búsqueda."
             onSelect={handleSelectAuto}
             variant="inventory"

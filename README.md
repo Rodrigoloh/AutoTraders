@@ -60,3 +60,25 @@ Configuración recomendada en Vercel:
 - Admin: `/demo-lote-norte/admin/login`
 - Plataforma: `/platform/login`
 - Usuario demo esperado en Supabase Auth: `demo-admin@carsaler.mx`
+
+## Leads y alcance de staff
+
+La ruta `/:slug/vende-tu-auto` permite que una persona envíe, sin crear una cuenta, sus
+datos de contacto, información del vehículo y fotos privadas. Esto crea un lead para revisión;
+no publica automáticamente un anuncio.
+
+- `lote_admin` ve todos los vehículos, leads y métricas del lote.
+- `lote_staff` sólo ve vehículos, leads y métricas que tenga asignados.
+- `lote_editor` se conserva como rol heredado equivalente a staff.
+
+Para desplegar esta función:
+
+1. Aplica `supabase/migrations/20260723190000_staff_assignments_and_sale_leads.sql`.
+2. Configura el secreto `LEAD_RATE_LIMIT_SALT` en Supabase.
+3. Despliega `create-sale-lead`; `supabase/config.toml` desactiva la verificación JWT porque el
+   formulario es público.
+4. Despliega `invite-lote-user` y `update-lote-member`.
+5. Despliega el frontend.
+
+Consulta `docs/AUTOSENVENTA_INTEGRATION_AUDIT.md` para el modelo de seguridad y las decisiones
+de adaptación.

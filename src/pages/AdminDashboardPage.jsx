@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useTenantTheme } from '../styles/themeContext.jsx';
 import { InventoryForm } from '../components/InventoryForm';
 import { InventoryList } from '../components/InventoryList';
+import { SaleLeadManager } from '../components/SaleLeadManager.jsx';
 import { KpiSummary } from '../components/KpiSummary';
 import { KpiChart } from '../components/KpiChart';
 import { BrandLogo } from '../components/BrandLogo.jsx';
@@ -118,7 +119,9 @@ export function AdminDashboardPage() {
   const { tenant, slug } = useTenantTheme();
   const [autos, setAutos] = useState([]);
   const [metrics, setMetrics] = useState([]);
+  const [saleLeads, setSaleLeads] = useState([]);
   const [sessionRole, setSessionRole] = useState('');
+  const [staffOptions, setStaffOptions] = useState([]);
   const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -134,12 +137,17 @@ export function AdminDashboardPage() {
       data: { session },
     } = await supabase.auth.getSession();
 
-    const [{ data: autosData }, { data: metricsData }, { data: ownMembership }] =
+    const [
+      { data: autosData },
+      { data: metricsData },
+      { data: saleLeadsData },
+      { data: ownMembership },
+    ] =
       await Promise.all([
         supabase
           .from('inventario')
           .select(
-            'id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes, meta_tags, created_at',
+            'id, assigned_staff_id, marca, modelo, anio, version, precio, moneda, kilometraje, combustible, transmision, descripcion, ciudad, estado, estatus, imagenes, meta_tags, created_at',
           )
           .eq('lote_id', tenant.id)
           .order('created_at', { ascending: false }),
@@ -149,6 +157,10 @@ export function AdminDashboardPage() {
           .eq('lote_id', tenant.id)
           .gte('fecha', getLast7DaysRange())
           .order('fecha', { ascending: true }),
+        supabase
+          .from('sale_leads')
+          .select('id, status')
+          .eq('lote_id', tenant.id),
         session?.user.app_metadata?.platform_role === 'super_admin'
           ? Promise.resolve({ data: { role: 'super_admin' } })
           : supabase
@@ -159,9 +171,22 @@ export function AdminDashboardPage() {
               .maybeSingle(),
       ]);
 
+    const resolvedRole = ownMembership?.role ?? '';
+    const isResolvedAdmin = ['lote_admin', 'super_admin'].includes(resolvedRole);
+    let availableStaff = [];
+
+    if (isResolvedAdmin) {
+      const { data: staffData } = await supabase.rpc('get_lote_staff', {
+        target_lote_id: tenant.id,
+      });
+      availableStaff = staffData ?? [];
+    }
+
     setAutos(autosData ?? []);
     setMetrics(metricsData ?? []);
-    setSessionRole(ownMembership?.role ?? '');
+    setSaleLeads(saleLeadsData ?? []);
+    setSessionRole(resolvedRole);
+    setStaffOptions(availableStaff);
     setIsLoading(false);
   };
 
@@ -169,10 +194,14 @@ export function AdminDashboardPage() {
     loadDashboard();
   }, [tenant?.id]);
 
-  const dashboardAutos = useMemo(
-    () => applyDemoDashboardTimeline(expandDemoAutos(autos, 6), slug),
-    [autos, slug],
-  );
+  const hasGlobalLoteScope = ['lote_admin', 'super_admin'].includes(sessionRole);
+  const dashboardAutos = useMemo(() => {
+    if (slug === 'demo-lote-norte' && hasGlobalLoteScope) {
+      return applyDemoDashboardTimeline(expandDemoAutos(autos, 6), slug);
+    }
+
+    return autos;
+  }, [autos, hasGlobalLoteScope, slug]);
 
   const summary = useMemo(() => {
     const totalViews = metrics.reduce((sum, row) => sum + Number(row.vistas_totales ?? 0), 0);
@@ -186,10 +215,12 @@ export function AdminDashboardPage() {
       totalViews,
       totalWhatsapp,
       conversion,
+      saleLeadTotal: saleLeads.length,
+      saleLeadWon: saleLeads.filter((lead) => lead.status === 'won').length,
       inventoryAging: buildInventoryAging(dashboardAutos),
       activityChart: normalizeMetrics(metrics),
     };
-  }, [dashboardAutos, metrics]);
+  }, [dashboardAutos, metrics, saleLeads]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -202,7 +233,13 @@ export function AdminDashboardPage() {
     await loadDashboard();
   };
 
-  const canManageInventory = ['lote_admin', 'lote_editor', 'super_admin'].includes(sessionRole);
+  const canManageInventory = [
+    'lote_admin',
+    'lote_staff',
+    'lote_editor',
+    'super_admin',
+  ].includes(sessionRole);
+  const isLoteAdmin = hasGlobalLoteScope;
   const publishedAutos = dashboardAutos.filter((auto) => auto.estatus === 'disponible').length;
   const soldAutos = dashboardAutos.filter((auto) => auto.estatus === 'vendido').length;
 
@@ -287,6 +324,18 @@ export function AdminDashboardPage() {
               type="inventory"
               value={formatCompact(soldAutos)}
             />
+            <KpiSummary
+              helpText={isLoteAdmin ? 'Solicitudes totales recibidas por el lote.' : 'Solicitudes que tienes asignadas.'}
+              title="Leads de venta"
+              type="whatsapp"
+              value={formatCompact(summary.saleLeadTotal)}
+            />
+            <KpiSummary
+              helpText="Solicitudes cerradas exitosamente dentro de tu alcance."
+              title="Leads ganados"
+              type="conversion"
+              value={formatCompact(summary.saleLeadWon)}
+            />
           </section>
 
           <section className="dashboard-grid admin-insight-grid">
@@ -311,7 +360,7 @@ export function AdminDashboardPage() {
                   Carga nuevas unidades y edita modelo, versión, descripción, specs e imágenes.
                 </p>
               </div>
-              {canManageInventory ? (
+              {isLoteAdmin ? (
                 <button className="btn" onClick={() => setIsCreateOpen((current) => !current)} type="button">
                   <Plus size={18} />
                   {isCreateOpen ? 'Cerrar alta' : 'Cargar nuevo auto'}
@@ -319,17 +368,26 @@ export function AdminDashboardPage() {
               ) : null}
             </div>
             {feedback ? <div className="muted">{feedback}</div> : null}
-            {isCreateOpen && canManageInventory ? (
+            {isCreateOpen && isLoteAdmin ? (
               <InventoryForm loteId={tenant?.id} onCreated={handleCreated} />
             ) : null}
           </section>
 
           <InventoryList
             autos={dashboardAutos}
+            canAssignStaff={isLoteAdmin}
             canEdit={canManageInventory}
             canManageImages={canManageInventory}
             loteId={tenant?.id}
             onRefresh={loadDashboard}
+            staffOptions={staffOptions}
+          />
+
+          <SaleLeadManager
+            isAdmin={isLoteAdmin}
+            loteId={tenant?.id}
+            onChanged={loadDashboard}
+            staffOptions={staffOptions}
           />
         </div>
       </main>

@@ -91,12 +91,14 @@ function buildDraft(auto) {
 
 export function InventoryList({
   autos,
+  canAssignStaff = false,
   canDelete = false,
   canEdit = false,
   canManageImages = false,
   canMarkSold = false,
   loteId = '',
   onRefresh,
+  staffOptions = [],
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -106,6 +108,7 @@ export function InventoryList({
   const [modelQuery, setModelQuery] = useState('');
   const [statusMenuId, setStatusMenuId] = useState(null);
   const [statusSavingId, setStatusSavingId] = useState('');
+  const [assignmentSavingId, setAssignmentSavingId] = useState('');
 
   const filteredAutos = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -148,6 +151,25 @@ export function InventoryList({
     }
 
     setStatusMessage(error.message ?? 'No se pudo eliminar el auto.');
+  };
+
+  const handleStaffAssignment = async (autoId, staffId) => {
+    setStatusMessage('');
+    setAssignmentSavingId(autoId);
+
+    const { error } = await supabase.rpc('assign_inventory_staff', {
+      target_inventory_id: autoId,
+      target_staff_id: staffId || null,
+    });
+
+    setAssignmentSavingId('');
+
+    if (error) {
+      setStatusMessage(error.message ?? 'No se pudo asignar el vehículo.');
+      return;
+    }
+
+    await onRefresh?.();
   };
 
   const startEdit = (auto) => {
@@ -215,7 +237,7 @@ export function InventoryList({
 
     try {
       if (canManageImages && pendingFiles.length && loteId) {
-        uploadedImages = await uploadInventoryImages(loteId, pendingFiles);
+        uploadedImages = await uploadInventoryImages(loteId, pendingFiles, autoId);
       }
     } catch (error) {
       setStatusMessage(error.message ?? 'No se pudieron subir las imágenes.');
@@ -328,6 +350,24 @@ export function InventoryList({
                     : `${weeksInInventory(auto.created_at)} semana(s) en inventario`}
                 </span>
               </div>
+              {canAssignStaff && !isPlaceholderAuto(auto) ? (
+                <div className="field">
+                  <label htmlFor={`inventory-staff-${auto.id}`}>Staff responsable</label>
+                  <select
+                    disabled={assignmentSavingId === auto.id}
+                    id={`inventory-staff-${auto.id}`}
+                    onChange={(event) => handleStaffAssignment(auto.id, event.target.value)}
+                    value={auto.assigned_staff_id ?? ''}
+                  >
+                    <option value="">Sin asignar</option>
+                    {staffOptions.map((staff) => (
+                      <option key={staff.user_id} value={staff.user_id}>
+                        {staff.full_name || staff.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
               <div className="inventory-actions">
                 {canEdit && !isPlaceholderAuto(auto) ? (
                   <button className="btn-soft" onClick={() => startEdit(auto)} type="button">

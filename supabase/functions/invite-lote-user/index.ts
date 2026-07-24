@@ -12,7 +12,7 @@ const adminClient = createClient(supabaseUrl, serviceRoleKey, {
 type InvitePayload = {
   loteId: string;
   email: string;
-  role: 'lote_admin' | 'lote_editor' | 'lote_viewer';
+  role: 'lote_admin' | 'lote_staff' | 'lote_editor' | 'lote_viewer';
   fullName?: string;
   redirectTo?: string;
 };
@@ -75,7 +75,7 @@ serve(async (req) => {
     if (
       !caller.isPlatformAdmin &&
       (caller.membershipRole !== 'lote_admin' ||
-        !['lote_editor', 'lote_viewer'].includes(payload.role))
+        !['lote_staff', 'lote_editor', 'lote_viewer'].includes(payload.role))
     ) {
       return new Response(
         JSON.stringify({ error: 'Only superadmin or lote_admin can invite this role.' }),

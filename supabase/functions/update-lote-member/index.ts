@@ -13,7 +13,7 @@ type UpdatePayload = {
   loteId: string;
   userId: string;
   action: 'change_role' | 'remove_access';
-  role?: 'lote_admin' | 'lote_editor' | 'lote_viewer';
+  role?: 'lote_admin' | 'lote_staff' | 'lote_editor' | 'lote_viewer';
 };
 
 async function authenticateRequest(req: Request, loteId: string) {
