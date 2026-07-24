@@ -21,7 +21,8 @@ export const demoCatalogContent = {
   ],
   hero: {
     eyebrow: 'Monterrey, Nuevo León',
-    title: 'SI BUSCAS AUTO CLÁSICO O DEPORTIVO, ZERTUCHECARS LO TIENE',
+    title: 'SI BUSCAS AUTO CLÁSICO O DEPORTIVO,',
+    accent: 'ZERTUCHECARS LO TIENE',
     subtitle:
       'VEN Y COMPRA TU AUTO CON NOSOTROS',
     primaryCta: 'Busca un auto',

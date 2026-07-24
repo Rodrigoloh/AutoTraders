@@ -105,7 +105,10 @@ export function PublicCatalogPage() {
           />
 
           <div className="hero-copy-block">
-            <h1 className="hero-title">{demoCatalogContent.hero.title}</h1>
+            <h1 className="hero-title">
+              <span>{demoCatalogContent.hero.title}</span>
+              <strong>{demoCatalogContent.hero.accent}</strong>
+            </h1>
             <p className="hero-subtext">{demoCatalogContent.hero.subtitle}</p>
             <div className="hero-action-row">
               <Link className="edge-button" to={primaryCtaHref}>

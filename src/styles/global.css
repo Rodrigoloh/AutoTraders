@@ -188,7 +188,23 @@ img {
 }
 
 .hero-title {
-  font-size: clamp(3.5rem, 11vw, 8.8rem);
+  max-width: 820px;
+  font-size: clamp(1.8rem, 4.2vw, 3.8rem);
+  line-height: 1.02;
+}
+
+.hero-title span,
+.hero-title strong {
+  display: block;
+}
+
+.hero-title strong {
+  margin-top: 0.12em;
+  color: #fff;
+  font-size: clamp(2.4rem, 6.4vw, 6rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.025em;
 }
 
 .heading-xl {
